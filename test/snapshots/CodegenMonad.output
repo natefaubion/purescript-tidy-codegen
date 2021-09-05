@@ -1,0 +1,10 @@
+module Test.Data (getNum) where
+
+import Prelude
+
+import Data.Map (Map)
+import Data.Map as Map
+import Data.Maybe (Maybe(..), maybe)
+
+getNum :: String -> Map String Int -> Maybe Int
+getNum key = maybe (Just 0) <<< Map.lookup key

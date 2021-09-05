@@ -55,13 +55,13 @@ typeHole = TypeHole <<< toName
 
 typeRow :: forall e a. ToName a Label => Array (Tuple a (CST.Type e)) -> Maybe (CST.Type e) -> CST.Type e
 typeRow lbls ty = TypeRow $ toWrapped tokLeftParen tokRightParen $ CST.Row
-  { labels: toSeparated tokComma <<< map (toLabeled tokComma) <$> NonEmptyArray.fromArray lbls
+  { labels: toSeparated tokComma <<< map (toLabeled tokDoubleColon) <$> NonEmptyArray.fromArray lbls
   , tail: Tuple tokPipe <$> ty
   }
 
 typeRecord :: forall e a. ToName a Label => Array (Tuple a (CST.Type e)) -> Maybe (CST.Type e) -> CST.Type e
-typeRecord lbls ty = TypeRow $ toWrapped tokLeftBrace tokRightBrace $ CST.Row
-  { labels: toSeparated tokComma <<< map (toLabeled tokComma) <$> NonEmptyArray.fromArray lbls
+typeRecord lbls ty = TypeRecord $ toWrapped tokLeftBrace tokRightBrace $ CST.Row
+  { labels: toSeparated tokComma <<< map (toLabeled tokDoubleColon) <$> NonEmptyArray.fromArray lbls
   , tail: Tuple tokPipe <$> ty
   }
 

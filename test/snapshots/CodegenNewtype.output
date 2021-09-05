@@ -1,0 +1,13 @@
+module Test.Newtype where
+
+newtype Const :: forall k. Type -> k -> Type
+newtype Const a b = Const a
+
+newtype User = User
+  { id :: UserId
+  , name :: String
+  , age :: Int
+  , email :: Email
+  , phone :: PhoneNumber
+  , followers :: Array UserId
+  }

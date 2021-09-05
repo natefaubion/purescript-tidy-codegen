@@ -1,0 +1,10 @@
+module Test.Exports
+  ( map
+  , (<$>)
+  , Void
+  , Either(..)
+  , Maybe(Nothing, Just)
+  , type (+)
+  , class Functor
+  , module Test.Exports
+  ) where

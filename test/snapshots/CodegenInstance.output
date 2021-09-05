@@ -1,0 +1,9 @@
+module Test.Instance where
+
+instance Functor Maybe where
+  map f a = case a of
+    Nothing -> Nothing
+    Just b -> Just (f b)
+
+instance Foo Either a
+else instance Foo Maybe

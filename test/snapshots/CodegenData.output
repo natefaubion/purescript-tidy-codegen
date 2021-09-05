@@ -1,0 +1,6 @@
+module Test.Data where
+
+data Maybe a = Nothing | Just a
+
+data Proxy :: forall k. k -> Type
+data Proxy a = Proxy

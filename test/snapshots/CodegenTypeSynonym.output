@@ -1,0 +1,14 @@
+module Test.TypeSynonym where
+
+type Id :: forall k. k -> k
+type Id a = a
+
+type UserFields r =
+  ( id :: UserId
+  , name :: String
+  , age :: Int
+  , email :: Email
+  , phone :: PhoneNumber
+  , followers :: Array UserId
+  | r
+  )
