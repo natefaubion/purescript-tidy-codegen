@@ -18,7 +18,7 @@ import PureScript.CST.Lexer (lexToken)
 import PureScript.CST.Types (Binder(..), Comment, Declaration(..), Expr(..), Fixity(..), Guarded(..), GuardedExpr(..), Ident(..), ImportDecl(..), Instance(..), IntValue(..), Label(..), Labeled(..), LineFeed, Module(..), ModuleBody(..), ModuleHeader(..), ModuleName(..), Name(..), Operator(..), Proper(..), QualifiedName(..), RecordLabeled(..), Role(..), Separated(..), SourceToken, Token(..), Type(..), Where(..), Wrapped(..))
 import PureScript.CST.Types as CST
 import Safe.Coerce (coerce)
-import Type.Equality (class TypeEquals)
+import Type.Equality (class TypeEquals, proof)
 import Type.Equality as TypeEquals
 
 newtype ErrorPrefix = ErrorPrefix String
@@ -133,6 +133,9 @@ instance Partial => ToToken String (Qualified SymbolName) where
 
 instance ToToken (Qualified SymbolName) (Qualified SymbolName) where
   toToken qual@(Qualified mn str) = Tuple (TokSymbolName mn (unwrap str)) qual
+
+instance ToToken (QualifiedName a) (Qualified a) where
+  toToken (QualifiedName qual) = Tuple qual.token.value (Qualified qual.module qual.name)
 
 class ToName a b where
   toName :: a -> Name b
@@ -351,6 +354,9 @@ instance ToRecordLabeled (Name Ident) b where
 instance (ToName a Label, TypeEquals b c) => ToRecordLabeled (Tuple a b) c where
   toRecordLabeled (Tuple field value) =
     RecordField (toName field) tokColon (TypeEquals.to value)
+
+instance TypeEquals a b => ToRecordLabeled (RecordLabeled a) b where
+  toRecordLabeled = proof
 
 class ToWhere a e | a -> e where
   toWhere :: a -> Where e

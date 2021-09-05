@@ -24,6 +24,7 @@ to generate this file without the comments in this block.
   , "either"
   , "enums"
   , "exceptions"
+  , "filterable"
   , "foldable-traversable"
   , "free"
   , "identity"

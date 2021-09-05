@@ -1,0 +1,54 @@
+module CodegenExamples where
+
+binaryOpExample = 4 + a / b
+type TypeCtorExample = Maybe Int
+type TypeRowExample = (id :: UserId, name :: String, age :: Int | r)
+type TypeRecordExample = { id :: UserId, name :: String, age :: Int | r }
+type TypeKindedExample = Maybe :: Type -> Type
+type TypeAppExample = Map UserId User
+type TypeOpExample = String /\ Int /\ Boolean
+type TypeOpNameExample = (~>)
+type TypeForallExample = forall a. a -> a
+type TypeConstrainedExample = forall f a. Functor f => Show a => f a -> f String
+type TypeArrowExample = UserId -> String -> Int -> User
+exprIdentExample = Map.lookup userId users
+exprCtorExample = List.Cons a List.Nil
+exprBoolExample = true
+exprCharExample = 'A'
+exprStringExample = "string"
+exprIntExample = 42
+exprIntHexExample = 0xff0000
+exprNumberExample = 1.618
+exprArrayExample = [ 1, 2, 3 ]
+exprRecordExample = { id: userId, name: userName, age: userAge }
+exprTypedExample = 42 :: Int
+exprInfixExample = a `append` b `append` c
+exprOpExample = "string" /\ 42 /\ false
+exprOpNameExample = (<>)
+exprDotExample = response.body.users
+exprUpdateExample = user { age = 42, phone { countryCode = 1 } }
+exprAppExample = Map.lookup userId users
+exprLambdaExample = \a b -> a <> b
+exprIfExample = if isLoggedIn user then renderPage else httpError 400
+exprCaseExample = case xs of
+  List.Cons x _ -> Just x
+  Nothing -> Nothing
+
+exprLetExample =
+  let
+    countDown :: Int -> Int
+    countDown n
+      | n > 0 = countDown (n - 1)
+      | otherwise = n
+  in
+    countDown 100
+
+exprDoExample = do
+  followers <- getFollowers user
+  favorites <- getFavorites user
+  pure { followers, favorites }
+
+letBinderExample = let { name } = user in name
+doLetExample = do
+  let { age } = user
+  age
