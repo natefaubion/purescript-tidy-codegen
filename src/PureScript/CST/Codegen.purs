@@ -2,6 +2,7 @@ module PureScript.CST.Codegen where
 
 import Prelude
 
+import Data.Array as Array
 import Data.Array.NonEmpty as NonEmptyArray
 import Data.Bifunctor (bimap, lmap)
 import Data.Maybe (Maybe(..), maybe)
@@ -83,11 +84,11 @@ typeForall vars ty =
   vars # NonEmptyArray.fromArray # maybe ty \vars' ->
     TypeForall tokForall vars' tokDot (precType0 ty)
 
-typeConstrained :: forall e. CST.Type e -> CST.Type e -> CST.Type e
-typeConstrained a b = TypeConstrained (precType1 a) tokRightFatArrow (precType0 b)
+typeConstrained :: forall e. Array (CST.Type e) -> CST.Type e -> CST.Type e
+typeConstrained = flip $ Array.foldr \a b -> TypeConstrained (precType1 a) tokRightFatArrow (precType0 b)
 
-typeArrow :: forall e. CST.Type e -> CST.Type e -> CST.Type e
-typeArrow a b = TypeArrow (precType1 a) tokRightArrow (precType0 b)
+typeArrow :: forall e. Array (CST.Type e) -> CST.Type e -> CST.Type e
+typeArrow = flip $ Array.foldr \a b -> TypeArrow (precType1 a) tokRightArrow (precType0 b)
 
 typeArrowName :: forall e. CST.Type e
 typeArrowName = TypeArrowName tokSymbolArrow

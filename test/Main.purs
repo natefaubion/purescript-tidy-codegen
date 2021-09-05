@@ -39,9 +39,11 @@ testModule1 = unsafePartial do
     [ declClass [] "Functor" [ typeVar "f" ] []
         [ classMember "map" do
             typeForall [ typeVar "a", typeVar "b" ]
-              $ typeArrow (typeArrow (typeVar "a") (typeVar "b"))
-              $ typeArrow (typeApp (typeVar "f") [ typeVar "a" ])
-              $ typeApp (typeVar "f") [ typeVar "b" ]
+              $ typeArrow
+                  [ typeArrow [ typeVar "a" ] (typeVar "b")
+                  , typeApp (typeVar "f") [ typeVar "a" ]
+                  ]
+                  (typeApp (typeVar "f") [ typeVar "b" ])
         ]
     , declData "Maybe" [ typeVar "a" ]
         [ dataCtor "Nothing" []
@@ -64,7 +66,7 @@ testModule1 = unsafePartial do
     , declNewtype "Const" [ typeVar "a", typeVarKinded "b" (typeCtor "Type") ] "Const" (typeVar "a")
     , declTypeSignature "Id" do
         typeForall [ typeVar "k" ]
-          $ typeArrow (typeVar "k") (typeVar "k")
+          $ typeArrow [ typeVar "k" ] (typeVar "k")
     , declType "Id" [ typeVar "a" ] (typeVar "a")
     ]
 
@@ -78,9 +80,11 @@ testModule2 = unsafePartial $ codegenModule "Test.Example" do
   mapLookup <- C.importFrom "Data.Map" (C.importValue "Map.lookup")
   C.exporting do
     C.write $ declSignature "getNum" do
-      typeArrow (typeCtor "String")
-        $ typeArrow (typeApp (typeCtor mapTy) [ typeCtor "String", typeCtor "Int" ])
-        $ typeApp (typeCtor maybeTy) [ typeCtor "Int" ]
+      typeArrow
+        [ typeCtor "String"
+        , typeApp (typeCtor mapTy) [ typeCtor "String", typeCtor "Int" ]
+        ]
+        (typeApp (typeCtor maybeTy) [ typeCtor "Int" ])
     C.write $ declValue "getNum" [ binderVar "key" ] do
       exprOp
         (exprApp (exprIdent maybeFn) [ exprApp (exprCtor justCtor) [ exprInt 0 ] ])
