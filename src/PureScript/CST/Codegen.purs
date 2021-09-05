@@ -6,6 +6,7 @@ import Data.Array as Array
 import Data.Array.NonEmpty as NonEmptyArray
 import Data.Bifunctor (bimap, lmap)
 import Data.Maybe (Maybe(..), maybe)
+import Data.Newtype (unwrap)
 import Data.Ord (abs)
 import Data.String as String
 import Data.String.CodeUnits as SCU
@@ -15,6 +16,7 @@ import Dodo as Dodo
 import PureScript.CST.Codegen.Class (class OverLeadingComments, class OverTrailingComments, class ToFixityName, class ToGuarded, class ToName, class ToNonEmptyArray, class ToQualifiedName, class ToRecordLabeled, class ToWhere, ErrorPrefix(..), overLeadingComments, overTrailingComments, toFixityName, toGuarded, toName, toNonEmptyArray, toQualifiedName, toRecordLabeled, toToken, toWhere)
 import PureScript.CST.Codegen.Common (toDelimited, toDelimitedNonEmpty, toOneOrDelimited, toParenList, toSeparated, toSourceToken, toWrapped, tokAdo, tokAll, tokAs, tokAt, tokBackslash, tokCase, tokClass, tokComma, tokData, tokDerive, tokDo, tokDot, tokDoubleColon, tokElse, tokEquals, tokFalse, tokForFixity, tokForRole, tokForall, tokForeign, tokHiding, tokIf, tokImport, tokIn, tokInstance, tokLeftArrow, tokLeftBrace, tokLeftFatArrow, tokLeftParen, tokLeftSquare, tokLet, tokModule, tokNegate, tokNewtype, tokOf, tokPipe, tokRightArrow, tokRightBrace, tokRightFatArrow, tokRightParen, tokRightSquare, tokRole, tokSymbolArrow, tokThen, tokTick, tokTrue, tokType, tokUnderscore, tokWhere)
 import PureScript.CST.Codegen.Precedence (precBinder0, precBinder1, precBinder2, precExpr0, precExpr1, precExpr2, precExpr3, precExpr5, precExpr6, precExpr7, precExprApp, precExprAppLast, precExprInfix, precInitLast, precType0, precType1, precType2, precType3)
+import PureScript.CST.Codegen.String (escapeSourceString)
 import PureScript.CST.Codegen.Types (BinaryOp(..), GuardedBranch(..), SymbolName(..), ClassMember)
 import PureScript.CST.Tidy (defaultFormatOptions, formatModule, toDoc)
 import PureScript.CST.Types (Binder(..), ClassFundep, Comment(..), DataCtor(..), DataMembers(..), Declaration(..), DoStatement(..), Export(..), Expr(..), Fixity, FixityOp(..), Foreign(..), Guarded, Ident, Import(..), ImportDecl(..), Instance(..), InstanceBinding(..), InstanceHead, IntValue(..), Label, Labeled(..), LetBinding(..), LineFeed(..), Module(..), ModuleBody(..), ModuleHeader(..), ModuleName, Name, Operator(..), PatternGuard(..), Proper, QualifiedName(..), RecordUpdate(..), Role, Separated(..), SourceToken, Token(..), Type(..), TypeVarBinding(..), Where(..), Wrapped(..))
@@ -63,9 +65,8 @@ typeRecord lbls ty = TypeRow $ toWrapped tokLeftBrace tokRightBrace $ CST.Row
   , tail: Tuple tokPipe <$> ty
   }
 
--- TODO: Escaping
 typeString :: forall e. String -> CST.Type e
-typeString str = TypeString (toSourceToken (TokString str str)) str
+typeString str = TypeString (toSourceToken (TokString (unwrap (escapeSourceString str)) str)) str
 
 typeKinded :: forall e. CST.Type e -> CST.Type e -> CST.Type e
 typeKinded a b = TypeKinded (precType0 a) tokDoubleColon b
@@ -109,11 +110,10 @@ exprBool :: forall e. Boolean -> Expr e
 exprBool bool = ExprBoolean (if bool then tokTrue else tokFalse) bool
 
 exprChar :: forall e. Char -> Expr e
-exprChar ch = ExprChar (toSourceToken (TokChar (SCU.singleton ch) ch)) ch
+exprChar ch = ExprChar (toSourceToken (TokChar (unwrap (escapeSourceString (SCU.singleton ch))) ch)) ch
 
--- TODO: Escaping
 exprString :: forall e. String -> Expr e
-exprString str = ExprString (toSourceToken (TokString str str)) str
+exprString str = ExprString (toSourceToken (TokString (unwrap (escapeSourceString str)) str)) str
 
 exprInt :: forall e. Int -> Expr e
 exprInt n = ExprInt (toSourceToken (TokInt (show n) (SmallInt n))) (SmallInt n)
@@ -274,11 +274,10 @@ binderBool :: forall e. Boolean -> Binder e
 binderBool bool = BinderBoolean (if bool then tokTrue else tokFalse) bool
 
 binderChar :: forall e. Char -> Binder e
-binderChar ch = BinderChar (toSourceToken (TokChar (SCU.singleton ch) ch)) ch
+binderChar ch = BinderChar (toSourceToken (TokChar (unwrap (escapeSourceString (SCU.singleton ch))) ch)) ch
 
--- TODO: Escaping
 binderString :: forall e. String -> Binder e
-binderString str = BinderString (toSourceToken (TokString str str)) str
+binderString str = BinderString (toSourceToken (TokString (unwrap (escapeSourceString str)) str)) str
 
 binderInt :: forall e. Int -> Binder e
 binderInt n = BinderInt neg (toSourceToken (TokInt (show val) (SmallInt val))) (SmallInt val)

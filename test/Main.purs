@@ -6,7 +6,7 @@ import Data.Maybe (Maybe(..))
 import Effect (Effect)
 import Effect.Class.Console (log)
 import Partial.Unsafe (unsafePartial)
-import PureScript.CST.Codegen (binaryOp, binderCtor, binderVar, caseBranch, classMember, dataCtor, declClass, declData, declImport, declImportAs, declInstance, declInstanceChain, declNewtype, declSignature, declType, declTypeSignature, declValue, exportClass, exportModule, exportOp, exportType, exportTypeAll, exportTypeMembers, exportTypeOp, exportValue, exprApp, exprCase, exprCtor, exprIdent, exprInt, exprOp, importClass, importOp, importTypeAll, importTypeMembers, importTypeOp, importValue, instName, module_, printModule, typeApp, typeArrow, typeCtor, typeForall, typeVar, typeVarKinded)
+import PureScript.CST.Codegen (binaryOp, binderCtor, binderVar, caseBranch, classMember, dataCtor, declClass, declData, declImport, declImportAs, declInstance, declInstanceChain, declNewtype, declSignature, declType, declTypeSignature, declValue, exportClass, exportModule, exportOp, exportType, exportTypeAll, exportTypeMembers, exportTypeOp, exportValue, exprApp, exprCase, exprChar, exprCtor, exprIdent, exprInt, exprOp, exprString, importClass, importOp, importTypeAll, importTypeMembers, importTypeOp, importValue, instName, module_, printModule, typeApp, typeArrow, typeCtor, typeForall, typeVar, typeVarKinded)
 import PureScript.CST.Codegen.Monad (codegenModule)
 import PureScript.CST.Codegen.Monad as C
 import PureScript.CST.Types (Module)
@@ -68,6 +68,8 @@ testModule1 = unsafePartial do
         typeForall [ typeVar "k" ]
           $ typeArrow [ typeVar "k" ] (typeVar "k")
     , declType "Id" [ typeVar "a" ] (typeVar "a")
+    , declValue "testEscape1" [] (exprString "\x01")
+    , declValue "testEscape2" [] (exprChar '\x01')
     ]
 
 testModule2 :: Module Void
