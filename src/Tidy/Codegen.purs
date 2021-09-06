@@ -55,7 +55,7 @@ defaultPrintOptions =
 -- | Pretty-prints a module using default format options.
 -- |
 -- |  ```purescript
--- |  source = printModule myModule
+-- |  exampleSource = printModule myModule
 -- |  ```
 printModule :: Module Void -> String
 printModule = printModuleWithOptions defaultPrintOptions
@@ -64,7 +64,7 @@ printModule = printModuleWithOptions defaultPrintOptions
 -- | and override as necessary.
 -- |
 -- | ```purescript
--- | source = printModule
+-- | exampleSource = printModule
 -- |   defaultPrintOptions
 -- |     { indentUnit = "    "
 -- |     , indentWidth = 4
@@ -100,7 +100,7 @@ printModuleWithOptions options mod =
 -- |     , binaryOp "/" (exprIdent "b")
 -- |     ]
 -- | ```
-binaryOp :: forall a b. ToQualifiedName a Operator => a -> b -> BinaryOp b
+binaryOp :: forall name b. ToQualifiedName name Operator => name -> b -> BinaryOp b
 binaryOp a b = BinaryOp (Tuple (toQualifiedName a) b)
 
 -- | Overloaded constructors for type variables. This can be used to construct
@@ -113,7 +113,9 @@ binaryOp a b = BinaryOp (Tuple (toQualifiedName a) b)
 -- |     (typeVar "a")
 -- | ```
 class TypeVar a e | a -> e where
+  -- | An overloaded constructor for type variables.
   typeVar :: forall name. ToName name Ident => name -> a
+  -- | An overloaded constructor for kinded type variables.
   typeVarKinded :: forall name. ToName name Ident => name -> CST.Type e -> a
 
 instance TypeVar (TypeVarBinding e) e where
@@ -132,7 +134,7 @@ instance TypeVar (CST.Type e) e where
 -- | ```purescript
 -- | exampleType = typeApp (typeCtor "Maybe") [ typeCtor "Int" ]
 -- | ```
-typeCtor :: forall e a. ToQualifiedName a Proper => a -> CST.Type e
+typeCtor :: forall e name. ToQualifiedName name Proper => name -> CST.Type e
 typeCtor = TypeConstructor <<< toQualifiedName
 
 -- | A type wildcard (`_`).
@@ -149,7 +151,7 @@ typeWildcard = TypeWildcard tokUnderscore
 -- |   ]
 -- |   (Just (typeVar "r"))
 -- | ```
-typeRow :: forall e a. ToName a Label => Array (Tuple a (CST.Type e)) -> Maybe (CST.Type e) -> CST.Type e
+typeRow :: forall e label. ToName label Label => Array (Tuple label (CST.Type e)) -> Maybe (CST.Type e) -> CST.Type e
 typeRow lbls ty = TypeRow $ toWrapped tokLeftParen tokRightParen $ CST.Row
   { labels: toSeparated tokComma <<< map (toLabeled tokDoubleColon) <$> NonEmptyArray.fromArray lbls
   , tail: Tuple tokPipe <$> ty
@@ -169,7 +171,7 @@ typeRowEmpty = typeRow ([] :: Array (Tuple Label _)) Nothing
 -- |   ]
 -- |   (Just (typeVar "r"))
 -- | ```
-typeRecord :: forall e a. ToName a Label => Array (Tuple a (CST.Type e)) -> Maybe (CST.Type e) -> CST.Type e
+typeRecord :: forall e label. ToName label Label => Array (Tuple label (CST.Type e)) -> Maybe (CST.Type e) -> CST.Type e
 typeRecord lbls ty = TypeRecord $ toWrapped tokLeftBrace tokRightBrace $ CST.Row
   { labels: toSeparated tokComma <<< map (toLabeled tokDoubleColon) <$> NonEmptyArray.fromArray lbls
   , tail: Tuple tokPipe <$> ty
@@ -228,7 +230,7 @@ typeOp ty = maybe ty (TypeOp (precType2 ty) <<< coerce) <<< NonEmptyArray.fromAr
 -- | ```purescript
 -- | exampleType = typeOpName "(~>)"
 -- | ```
-typeOpName :: forall e a. ToQualifiedName a SymbolName => a -> CST.Type e
+typeOpName :: forall e name. ToQualifiedName name SymbolName => name -> CST.Type e
 typeOpName = TypeOpName <<< (coerce :: QualifiedName SymbolName -> _) <<< toQualifiedName
 
 -- | Constructs a `forall` given type variable bindings.
@@ -300,7 +302,7 @@ typeParens = case _ of
 -- |     , exprIdent "users"
 -- |     ]
 -- | ```
-exprIdent :: forall e a. ToQualifiedName a Ident => a -> Expr e
+exprIdent :: forall e name. ToQualifiedName name Ident => name -> Expr e
 exprIdent = ExprIdent <<< toQualifiedName
 
 -- | An overloaded constructor for a value constructor, which may be qualified.
@@ -312,7 +314,7 @@ exprIdent = ExprIdent <<< toQualifiedName
 -- |     , exprCtor "List.Nil"
 -- |     ]
 -- | ```
-exprCtor :: forall e a. ToQualifiedName a Proper => a -> Expr e
+exprCtor :: forall e name. ToQualifiedName name Proper => name -> Expr e
 exprCtor = ExprConstructor <<< toQualifiedName
 
 -- | Constructs a `Boolean` literal.
@@ -384,7 +386,7 @@ exprArray = ExprArray <<< toDelimited tokLeftSquare tokRightSquare tokComma
 -- |   , Tuple "age" (exprIdent "userAge")
 -- |   ]
 -- | ```
-exprRecord :: forall e a. ToRecordLabeled a (Expr e) => Array a -> Expr e
+exprRecord :: forall e field. ToRecordLabeled field (Expr e) => Array field -> Expr e
 exprRecord = ExprRecord <<< toDelimited tokLeftBrace tokRightBrace tokComma <<< map toRecordLabeled
 
 -- | Wraps an expression in parens.
@@ -441,7 +443,7 @@ exprOp expr =
 -- | ```purescript
 -- | exampleExpr = exprOpName "(<>)"
 -- | ```
-exprOpName :: forall e a. ToQualifiedName a SymbolName => a -> Expr e
+exprOpName :: forall e name. ToQualifiedName name SymbolName => name -> Expr e
 exprOpName = ExprOpName <<< (coerce :: QualifiedName SymbolName -> _) <<< toQualifiedName
 
 -- | Constructs unary negation.
@@ -453,7 +455,7 @@ exprNegate = ExprNegate tokNegate <<< precExpr5
 -- | ```purescript
 -- | exampleExpr = exprDot (exprIdent "response") [ "body", "users" ]
 -- | ```
-exprDot :: forall e a. ToName a Label => Expr e -> Array a -> Expr e
+exprDot :: forall e label. ToName label Label => Expr e -> Array label -> Expr e
 exprDot expr = NonEmptyArray.fromArray >>> maybe expr \path ->
   ExprRecordAccessor
     { expr: precExpr7 expr
@@ -557,11 +559,11 @@ exprCase head branches = ExprCase
 -- |   exprLet
 -- |     [ letSignature "countDown" (typeArrow [ typeCtor "Int" ] (typeCtor "Int"))
 -- |     , letValue "countDown" [ binderVar "n" ]
--- |         [ guard [ guardExpr (exprOp (exprIdent "n") [ binaryOp ">" (exprInt 0) ]) ]
+-- |         [ guardBranch [ guardExpr (exprOp (exprIdent "n") [ binaryOp ">" (exprInt 0) ]) ]
 -- |             ( exprApp (exprIdent "countDown")
 -- |                 [ exprOp (exprIdent "n") [ binaryOp "-" (exprInt 1) ] ]
 -- |             )
--- |         , guard [ guardExpr (exprIdent "otherwise") ]
+-- |         , guardBranch [ guardExpr (exprIdent "otherwise") ]
 -- |             (exprIdent "n")
 -- |         ]
 -- |     ]
@@ -632,7 +634,6 @@ letBinder :: forall e rhs. ToWhere rhs e => Binder e -> rhs -> LetBinding e
 letBinder binder = LetBindingPattern binder tokEquals <<< toWhere
 
 -- | Constructs a let binding context within a do expression.
--- | Constructs a value binding with a left-hand-side pattern binder.
 -- |
 -- | ```purescript
 -- | exampleExpr =
@@ -647,68 +648,148 @@ letBinder binder = LetBindingPattern binder tokEquals <<< toWhere
 doLet :: forall e f. ToNonEmptyArray f => f (LetBinding e) -> DoStatement e
 doLet = DoLet tokLet <<< toNonEmptyArray (ErrorPrefix "doLet")
 
+-- | Constructs a do statement which has no binder.
+-- |
+-- | ```purescript
+-- | exampleExpr =
+-- |   exprDo
+-- |     [ doDiscard
+-- |         ( exprApp (exprIdent "logoutUser")
+-- |             [ exprIdent "user" ]
+-- |         )
+-- |     ]
+-- |     ( exprApp (exprIdent "pure")
+-- |         [ exprApp (exprIdent "httpStatus")
+-- |             [ exprInt 200 ]
+-- |         ]
+-- |     )
+-- | ```
 doDiscard :: forall e. Expr e -> DoStatement e
 doDiscard = DoDiscard
 
+-- | Constructs a do statement which binds it's return value.
+-- |
+-- | ```purescript
+-- | exampleExpr =
+-- |   exprDo
+-- |     [ doBind (binderRecord [ "followers" ])
+-- |         (exprApp (exprIdent "getUser") [ exprIdent "user" ])
+-- |     ]
+-- |     ( exprApp (exprIdent "pure")
+-- |         [ exprIdent "followers" ]
+-- |     )
+-- | ```
 doBind :: forall e. Binder e -> Expr e -> DoStatement e
 doBind = flip DoBind tokLeftArrow
 
+-- | Constructs a where let binding context. This can be used anywhere that
+-- | takes a `ToWhere` or `ToGuarded` constraint, such as in value bindings,
+-- | case branches, and guards.
+-- |
+-- | ```purescript
+-- | exampleDecl =
+-- |   declValue "getName" [ binderVar "user" ]
+-- |     ( exprWhere (exprIdent "name")
+-- |         [ letBinder (binderRecord [ "name" ])
+-- |             (exprIdent "user")
+-- |         ]
+-- |     )
+-- | ```
 exprWhere :: forall e. Expr e -> Array (LetBinding e) -> Where e
 exprWhere expr binds = Where { expr, bindings: Tuple tokWhere <$> NonEmptyArray.fromArray binds }
 
-guard :: forall e f a. ToNonEmptyArray f => ToWhere a e => f (PatternGuard e) -> a -> GuardedBranch e
-guard pats = GuardedBranch (toNonEmptyArray (ErrorPrefix "guard") pats) <<< toWhere
+-- | Constructs a guarded branch in a value binding or case expressions.
+-- | This can be used anwhere that takes a `ToGuarded` constraint.
+-- |
+-- | ```purescript
+-- | exampleDecl =
+-- |   declValue "countDown" [ binderVar "n" ]
+-- |     [ guardBranch [ guardExpr (exprOp (exprIdent "n") [ binaryOp ">" (exprInt 0) ]) ]
+-- |         ( exprApp (exprIdent "countDown")
+-- |             [ exprOp (exprIdent "n") [ binaryOp "-" (exprInt 1) ] ]
+-- |         )
+-- |     , guardBranch [ guardExpr (exprIdent "otherwise") ]
+-- |         (exprIdent "n")
+-- |     ]
+-- | ```
+guardBranch :: forall e f expr. ToNonEmptyArray f => ToWhere expr e => f (PatternGuard e) -> expr -> GuardedBranch e
+guardBranch pats = GuardedBranch (toNonEmptyArray (ErrorPrefix "guardBranch") pats) <<< toWhere
 
+-- | Constructs a guard expression that does not bind anything.
 guardExpr :: forall e. Expr e -> PatternGuard e
 guardExpr = PatternGuard <<< { binder: Nothing, expr: _ }
 
+-- | Constructs a guard expression that binds a value.
 guardBinder :: forall e. Binder e -> Expr e -> PatternGuard e
 guardBinder bnd = PatternGuard <<< { binder: Just (Tuple bnd tokLeftArrow), expr: _ }
 
+-- | Constructs a case branch for use with exprCase. See exprCase.
 caseBranch
-  :: forall e f a
+  :: forall e f branch
    . ToNonEmptyArray f
-  => ToGuarded a e
+  => ToGuarded branch e
   => f (Binder e)
-  -> a
+  -> branch
   -> Tuple (Separated (Binder e)) (Guarded e)
 caseBranch lhs rhs =
   Tuple (toSeparated tokComma (toNonEmptyArray (ErrorPrefix "caseBranch") lhs))
     (toGuarded tokRightArrow rhs)
 
+-- | Constructs an expression section (`_`). This is meaningless and will
+-- | produce invalid syntax when used arbitrarily. Pair with appropriate
+-- | constructors like `exprCase` or `exprDot`.
+exprSection :: forall e. Expr e
+exprSection = ExprSection tokUnderscore
+
+-- | Constructs a wildcard (`_`) binding pattern.
+-- |
+-- | ```purescript
+-- | exampleExpr =
+-- |   exprLambda [ binderWildcard ]
+-- |     (exprApp (exprIdent "countDown") [ exprInt 100 ])
+-- | ```
 binderWildcard :: forall e. Binder e
 binderWildcard = BinderWildcard tokUnderscore
 
-binderVar :: forall e a. ToName a Ident => a -> Binder e
+-- | Constructs a variable binding pattern.
+binderVar :: forall e name. ToName name Ident => name -> Binder e
 binderVar = BinderVar <<< toName
 
-binderNamed :: forall e a. ToName a Ident => a -> Binder e -> Binder e
+-- | Constructs a named binding pattern (`@`).
+binderNamed :: forall e name. ToName name Ident => name -> Binder e -> Binder e
 binderNamed n = BinderNamed (toName n) tokAt
 
-binderCtor :: forall e a. ToQualifiedName a Proper => a -> Array (Binder e) -> Binder e
+-- | Constructs a constructor binding pattern.
+binderCtor :: forall e name. ToQualifiedName name Proper => name -> Array (Binder e) -> Binder e
 binderCtor n = BinderConstructor (toQualifiedName n) <<< map precBinder2
 
+-- | Constructs a boolean literal binding pattern.
 binderBool :: forall e. Boolean -> Binder e
 binderBool bool = BinderBoolean (if bool then tokTrue else tokFalse) bool
 
+-- | Constructs a char literal binding pattern.
 binderChar :: forall e. Char -> Binder e
 binderChar ch = BinderChar (toSourceToken (TokChar (unwrap (escapeSourceString (SCU.singleton ch))) ch)) ch
 
+-- | Constructs a string literal binding pattern.
 binderString :: forall e. String -> Binder e
 binderString str = BinderString (toSourceToken (TokString (unwrap (escapeSourceString str)) str)) str
 
+-- | Constructs an int literal binding pattern.
 binderInt :: forall e. Int -> Binder e
 binderInt n = BinderInt neg (toSourceToken (TokInt (show val) (SmallInt val))) (SmallInt val)
   where
   val = abs n
   neg = if n < 0 then Just tokNegate else Nothing
 
+-- | Constructs a number literal binding pattern.
 binderNumber :: forall e. Number -> Binder e
 binderNumber n = BinderNumber neg (toSourceToken (TokNumber (show val) val)) val
   where
   val = abs n
   neg = if n < 0.0 then Just tokNegate else Nothing
 
+-- | Constructs an array literal binding pattern.
 binderArray :: forall e. Array (Binder e) -> Binder e
 binderArray arr = BinderArray $ Wrapped
   { close: tokRightSquare
@@ -716,22 +797,35 @@ binderArray arr = BinderArray $ Wrapped
   , value: toSeparated tokComma <$> NonEmptyArray.fromArray arr
   }
 
-binderRecord :: forall e a. ToRecordLabeled a (Binder e) => Array a -> Binder e
+-- | Constructs a record literal binding pattern.
+binderRecord :: forall e field. ToRecordLabeled field (Binder e) => Array field -> Binder e
 binderRecord arr = BinderRecord $ Wrapped
   { close: tokRightBrace
   , open: tokLeftBrace
   , value: toSeparated tokComma <<< map toRecordLabeled <$> NonEmptyArray.fromArray arr
   }
 
+-- | Wraps a binding pattern in parens.
 binderParens :: forall e. Binder e -> Binder e
 binderParens = BinderParens <<< toWrapped tokRightParen tokLeftParen
 
+-- | Constructs a typed binding pattern.
 binderTyped :: forall e. Binder e -> CST.Type e -> Binder e
 binderTyped = flip BinderTyped tokDoubleColon <<< precBinder0
 
+-- | Constructs an operator binding pattern.
 binderOp :: forall e. Binder e -> Array (BinaryOp (Binder e)) -> Binder e
 binderOp bnd = maybe bnd (BinderOp bnd <<< coerce) <<< NonEmptyArray.fromArray <<< map (map precBinder1)
 
+-- | Constructs a data declaration.
+-- |
+-- | ```purescript
+-- | exampleDecl =
+-- |   declData "Either" [ typeVar "a", typeVar "b" ]
+-- |     [ dataCtor "Left" [ typeVar "a" ]
+-- |     , dataCtor "Right" [ typeVar "b" ]
+-- |     ]
+-- | ```
 declData
   :: forall e name
    . ToName name Proper
@@ -743,9 +837,23 @@ declData name vars ctors =
   DeclData { keyword: tokData, name: toName name, vars } $
     Tuple tokEquals <<< toSeparated tokPipe <$> NonEmptyArray.fromArray ctors
 
+-- | Constructs a data constructor variant. See declData.
 dataCtor :: forall e name. ToName name Proper => name -> Array (CST.Type e) -> DataCtor e
 dataCtor name fields = DataCtor { name: toName name, fields }
 
+-- | Constructs a type synonym declaration.
+-- |
+-- | ```purescript
+-- | exampleDecl =
+-- |   declType "UserFields" [ typeVar "r" ]
+-- |     ( typeRow
+-- |         [ Tuple "id" (typeCtor "UserId")
+-- |         , Tuple "name" (typeCtor "String")
+-- |         , Tuple "age" (typeCtor "Int")
+-- |         ]
+-- |         (Just (typeVar "r"))
+-- |     )
+-- | ```
 declType
   :: forall e name
    . ToName name Proper
@@ -756,6 +864,12 @@ declType
 declType name vars =
   DeclType { keyword: tokType, name: toName name, vars } tokEquals
 
+-- | Constructs a newtype declaration.
+-- |
+-- | ```purescript
+-- | exampleDecl =
+-- |   declNewtype "UserId" [] "UserId" (typeCtor "String")
+-- | ```
 declNewtype
   :: forall e name ctor
    . ToName name Proper
@@ -768,6 +882,15 @@ declNewtype
 declNewtype name vars ctor =
   DeclNewtype { keyword: tokNewtype, name: toName name, vars } tokEquals (toName ctor)
 
+-- | Constructs a class declaration.
+-- |
+-- | ```purescript
+-- | exampleDecl =
+-- |   declClass [ typeApp (typeCtor "Eq") [ typeVar "a" ] ] "Ord" [ typeVar "a" ] []
+-- |     [ classMember "compare"
+-- |         (typeArrow [ typeVar "a", typeVar "a" ] (typeCtor "Ordering"))
+-- |     ]
+-- | ```
 declClass
   :: forall e name
    . ToName name Proper
@@ -787,10 +910,27 @@ declClass super name vars fundeps members =
     }
     (Tuple tokWhere <$> NonEmptyArray.fromArray members)
 
+-- | Constructs a class member signature. See declClass.
 classMember :: forall e name. ToName name Ident => name -> CST.Type e -> ClassMember e
 classMember = curry (toLabeled tokDoubleColon)
 
 class DeclInstance a e | a -> e where
+  -- | An overloaded constructor for instances. Can be used to construct a
+  -- | declaration directly, or within an instance chain.
+  -- |
+  -- | ```purescript
+  -- | exampleDecl =
+  -- |   declInstance Nothing [] "Functor" [ typeApp (typeCtor "Maybe") [ typeVar "a" ] ]
+  -- |     [ instValue "map" [ binderVar "f" ]
+  -- |         ( exprCase [ exprSection ]
+  -- |             [ caseBranch [ binderCtor "Just" [ binderVar "a" ] ]
+  -- |                 (exprApp (exprCtor "Just") [ exprApp (exprIdent "f") [ exprIdent "a" ] ])
+  -- |             , caseBranch [ binderCtor "Nothing" [] ]
+  -- |                 (exprCtor "Nothing")
+  -- |             ]
+  -- |         )
+  -- |     ]
+  -- | ```
   declInstance
     :: forall className
      . ToQualifiedName className Proper
@@ -814,14 +954,29 @@ instance DeclInstance (Declaration e) e where
       , tail: []
       }
 
+-- | Constructs an instance chain.
+-- |
+-- | ```purescript
+-- | exampleDecl =
+-- |   declInstanceChain
+-- |     [ declInstance Nothing [] "IsTypeEqual"
+-- |         [ typeVar "a", typeVar "a", typeCtor "True" ]
+-- |         []
+-- |     , declInstance Nothing [] "IsTypeEqual"
+-- |         [ typeVar "a", typeVar "b", typeCtor "False" ]
+-- |         []
+-- |     ]
+-- | ```
 declInstanceChain :: forall e f. ToNonEmptyArray f => f (Instance e) -> Declaration e
 declInstanceChain = DeclInstanceChain <<< toSeparated tokElse <<< toNonEmptyArray (ErrorPrefix "declInstanceChain")
 
+-- | Constructs an signature for an instance binding.
 instSignature :: forall e a. ToName a Ident => a -> CST.Type e -> InstanceBinding e
 instSignature = curry $ InstanceBindingSignature <<< toLabeled tokDoubleColon
 
-instName :: forall e a b. ToName a Ident => ToGuarded b e => a -> Array (Binder e) -> b -> InstanceBinding e
-instName name binders grd = InstanceBindingName
+-- | Constructs an instance value binding. See declInstance.
+instValue :: forall e a b. ToName a Ident => ToGuarded b e => a -> Array (Binder e) -> b -> InstanceBinding e
+instValue name binders grd = InstanceBindingName
   { name: toName name
   , binders
   , guarded: toGuarded tokEquals grd
@@ -840,9 +995,15 @@ instHead name constraints className types =
   , name: flip Tuple tokDoubleColon <$> name
   , constraints: flip Tuple tokRightFatArrow <<< toOneOrDelimited <$> NonEmptyArray.fromArray constraints
   , className: toQualifiedName className
-  , types
+  , types: map precType3 types
   }
 
+-- | Constructs an instance deriving declaration.
+-- |
+-- | ```purescript
+-- | exampleDecl =
+-- |   declDerive Nothing [] "Eq" [ typeCtor "UserId" ]
+-- | ```
 declDerive
   :: forall e className
    . ToQualifiedName className Proper
@@ -854,6 +1015,12 @@ declDerive
 declDerive name constraints className types =
   DeclDerive tokDerive Nothing (instHead name constraints className types)
 
+-- | Constructs a newtype instance deriving declaration.
+-- |
+-- | ```purescript
+-- | exampleDecl =
+-- |   declDeriveNewtype Nothing [] "Eq" [ typeCtor "UserId" ]
+-- | ```
 declDeriveNewtype
   :: forall e className
    . ToQualifiedName className Proper
@@ -865,21 +1032,39 @@ declDeriveNewtype
 declDeriveNewtype name constraints className types =
   DeclDerive tokDerive (Just tokNewtype) (instHead name constraints className types)
 
+-- | Constructs a kind signature for a data declaration.
 declDataSignature :: forall e a. ToName a Proper => a -> CST.Type e -> Declaration e
 declDataSignature = curry $ DeclKindSignature tokData <<< toLabeled tokDoubleColon
 
+-- | Constructs a kind signature for a newtype declaration.
 declNewtypeSignature :: forall e a. ToName a Proper => a -> CST.Type e -> Declaration e
 declNewtypeSignature = curry $ DeclKindSignature tokNewtype <<< toLabeled tokDoubleColon
 
+-- | Constructs a kind signature for a type synonym declaration.
 declTypeSignature :: forall e a. ToName a Proper => a -> CST.Type e -> Declaration e
 declTypeSignature = curry $ DeclKindSignature tokType <<< toLabeled tokDoubleColon
 
+-- | Constructs a kind signature for a class declaration.
 declClassSignature :: forall e a. ToName a Proper => a -> CST.Type e -> Declaration e
 declClassSignature = curry $ DeclKindSignature tokClass <<< toLabeled tokDoubleColon
 
+-- | Constructs a type signature for a value declaration.
 declSignature :: forall e a. ToName a Ident => a -> CST.Type e -> Declaration e
 declSignature = curry $ DeclSignature <<< toLabeled tokDoubleColon
 
+-- | Constructs a value declaration.
+-- |
+-- | ```purescript
+-- | exampleDecl =
+-- |   declValue "countDown" [ binderVar "n" ]
+-- |     [ guardBranch [ guardExpr (exprOp (exprIdent "n") [ binaryOp ">" (exprInt 0) ]) ]
+-- |         ( exprApp (exprIdent "countDown")
+-- |             [ exprOp (exprIdent "n") [ binaryOp "-" (exprInt 1) ] ]
+-- |         )
+-- |     , guardBranch [ guardExpr (exprIdent "otherwise") ]
+-- |         (exprIdent "n")
+-- |     ]
+-- | ```
 declValue
   :: forall e name guards
    . ToName name Ident
@@ -894,6 +1079,12 @@ declValue name binders grd = DeclValue
   , guarded: toGuarded tokEquals grd
   }
 
+-- | Constructs an fixity declaration for a value operator.
+-- |
+-- | ```purescript
+-- | exampleDecl =
+-- |   declInfix Infixl 4 "map" "<$>"
+-- | ```
 declInfix
   :: forall e name op
    . ToFixityName name
@@ -909,6 +1100,12 @@ declInfix fixity prec name op = DeclFixity
   , operator: FixityValue (toFixityName name) tokAs (toName op)
   }
 
+-- | Constructs an fixity declaration for a type operator.
+-- |
+-- | ```purescript
+-- | exampleDecl =
+-- |   declInfix Infixr 0 "RowApply" "+"
+-- | ```
 declInfixType
   :: forall e name op
    . ToQualifiedName name Proper
@@ -924,15 +1121,20 @@ declInfixType fixity prec name op = DeclFixity
   , operator: FixityType tokType (toQualifiedName name) tokAs (toName op)
   }
 
+-- | Constructs a foreign import declaration.
 declForeign :: forall e name. ToName name Ident => name -> CST.Type e -> Declaration e
 declForeign = curry $ DeclForeign tokForeign tokImport <<< ForeignValue <<< toLabeled tokDoubleColon
 
+-- | Constructs a foreign data import declaration.
 declForeignData :: forall e name. ToName name Proper => name -> CST.Type e -> Declaration e
 declForeignData = curry $ DeclForeign tokForeign tokImport <<< ForeignData tokData <<< toLabeled tokDoubleColon
 
+-- | Constructs a role declaration.
 declRole :: forall e f name. ToName name Proper => ToNonEmptyArray f => name -> f Role -> Declaration e
 declRole name roles = DeclRole tokType tokRole (toName name) ((Tuple =<< tokForRole) <$> toNonEmptyArray (ErrorPrefix "declRole") roles)
 
+-- | Constructs an import declaration with selective imports. Providing no named
+-- | imports results in an open import.
 declImport :: forall e name. ToName name ModuleName => name -> Array (Import e) -> ImportDecl e
 declImport name imports = ImportDecl
   { keyword: tokImport
@@ -941,6 +1143,7 @@ declImport name imports = ImportDecl
   , qualified: Nothing
   }
 
+-- | Constructs a qualified import declaration.
 declImportAs :: forall e as name. ToName name ModuleName => ToName as ModuleName => name -> Array (Import e) -> as -> ImportDecl e
 declImportAs name imports as = ImportDecl
   { keyword: tokImport
@@ -949,6 +1152,7 @@ declImportAs name imports as = ImportDecl
   , qualified: Just (Tuple tokAs (toName as))
   }
 
+-- | Constructs a hiding import declaration.
 declImportHiding :: forall e name. ToName name ModuleName => name -> Array (Import e) -> ImportDecl e
 declImportHiding name imports = ImportDecl
   { keyword: tokImport
@@ -957,6 +1161,7 @@ declImportHiding name imports = ImportDecl
   , qualified: Nothing
   }
 
+-- | Constructs a qualified hiding import declaration.
 declImportHidingAs :: forall e as name. ToName name ModuleName => ToName as ModuleName => name -> Array (Import e) -> as -> ImportDecl e
 declImportHidingAs name imports as = ImportDecl
   { keyword: tokImport
@@ -965,18 +1170,23 @@ declImportHidingAs name imports as = ImportDecl
   , qualified: Just (Tuple tokAs (toName as))
   }
 
+-- | Constructs a value import.
 importValue :: forall e name. ToName name Ident => name -> Import e
 importValue = ImportValue <<< toName
 
+-- | Constructs a value operator import.
 importOp :: forall e name. ToName name SymbolName => name -> Import e
 importOp = ImportOp <<< (coerce :: Name SymbolName -> Name Operator) <<< toName
 
+-- | Constructs a type import.
 importType :: forall e name. ToName name Proper => name -> Import e
 importType = flip ImportType Nothing <<< toName
 
+-- | Constructs a type import with all data members.
 importTypeAll :: forall e name. ToName name Proper => name -> Import e
 importTypeAll = flip ImportType (Just (DataAll tokAll)) <<< toName
 
+-- | Constructs a type import with selective data members.
 importTypeMembers :: forall e name member. ToName name Proper => ToName member Proper => name -> Array member -> Import e
 importTypeMembers name members = ImportType (toName name) $ Just $ DataEnumerated $ Wrapped
   { close: tokRightParen
@@ -984,24 +1194,31 @@ importTypeMembers name members = ImportType (toName name) $ Just $ DataEnumerate
   , value: toSeparated tokComma <<< map toName <$> NonEmptyArray.fromArray members
   }
 
+-- | Constructs a type operator import.
 importTypeOp :: forall e name. ToName name SymbolName => name -> Import e
 importTypeOp = ImportTypeOp tokType <<< (coerce :: Name SymbolName -> Name Operator) <<< toName
 
+-- | Constructs a class import.
 importClass :: forall e name. ToName name Proper => name -> Import e
 importClass = ImportClass tokClass <<< toName
 
+-- | Constructs a value export.
 exportValue :: forall e name. ToName name Ident => name -> Export e
 exportValue = ExportValue <<< toName
 
+-- | Constructs a value operator export.
 exportOp :: forall e name. ToName name SymbolName => name -> Export e
 exportOp = ExportOp <<< (coerce :: Name SymbolName -> Name Operator) <<< toName
 
+-- | Constructs a type export.
 exportType :: forall e name. ToName name Proper => name -> Export e
 exportType = flip ExportType Nothing <<< toName
 
+-- | Constructs a type export with all data members.
 exportTypeAll :: forall e name. ToName name Proper => name -> Export e
 exportTypeAll = flip ExportType (Just (DataAll tokAll)) <<< toName
 
+-- | Constructs a type export with selective data members.
 exportTypeMembers :: forall e name member. ToName name Proper => ToName member Proper => name -> Array member -> Export e
 exportTypeMembers name members = ExportType (toName name) $ Just $ DataEnumerated $ Wrapped
   { close: tokRightParen
@@ -1009,15 +1226,19 @@ exportTypeMembers name members = ExportType (toName name) $ Just $ DataEnumerate
   , value: toSeparated tokComma <<< map toName <$> NonEmptyArray.fromArray members
   }
 
+-- | Constructs a type operator export.
 exportTypeOp :: forall e name. ToName name SymbolName => name -> Export e
 exportTypeOp = ExportTypeOp tokType <<< (coerce :: Name SymbolName -> Name Operator) <<< toName
 
+-- | Constructs a class export.
 exportClass :: forall e name. ToName name Proper => name -> Export e
 exportClass = ExportClass tokClass <<< toName
 
+-- | Constructs a module re-export.
 exportModule :: forall e name. ToName name ModuleName => name -> Export e
 exportModule = ExportModule tokModule <<< toName
 
+-- | Constructs a module.
 module_
   :: forall e name
    . ToName name ModuleName
@@ -1041,24 +1262,31 @@ module_ name exports imports decls = Module
       }
   }
 
+-- | Constructs line comments (`--`).
 lineComments :: String -> Array (Comment LineFeed)
 lineComments = map (Comment <<< append "-- ") <<< String.split (String.Pattern "\n")
 
+-- | Constructs documentation line comments (`-- |`).
 docComments :: String -> Array (Comment LineFeed)
 docComments = map (Comment <<< append "-- | ") <<< String.split (String.Pattern "\n")
 
+-- | Constructs a block comment.
 blockComment :: forall a. String -> Array (Comment a)
 blockComment = pure <<< Comment <<< append "{- " <<< flip append " -}"
 
+-- | Constructs line break annotations.
 lineBreaks :: Int -> Array (Comment LineFeed)
 lineBreaks = pure <<< Line LF
 
+-- | Constructs space annotations.
 spaces :: forall a. Int -> Array (Comment a)
 spaces = pure <<< Space
 
+-- | Attaches leading comments to a CST node.
 leading :: forall a. OverLeadingComments a => Array (Comment LineFeed) -> a -> a
 leading c = overLeadingComments (append c)
 
+-- | Attaches trailing comments to a CST node.
 trailing :: forall a trl. OverTrailingComments a trl => a -> Array (Comment trl) -> a
 trailing a c = overTrailingComments (flip append c) a
 

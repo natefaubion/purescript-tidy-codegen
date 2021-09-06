@@ -5,5 +5,5 @@ instance Functor Maybe where
     Nothing -> Nothing
     Just b -> Just (f b)
 
-instance Foo Either a
+instance Foo (Either a)
 else instance Foo Maybe

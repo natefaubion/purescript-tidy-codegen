@@ -376,6 +376,9 @@ instance ToGuarded (Expr e) e where
 instance ToGuarded (Where e) e where
   toGuarded = Unconditional
 
+instance ToGuarded (GuardedBranch e) e where
+  toGuarded tok = toGuarded tok <<< NonEmptyArray.singleton
+
 instance TypeEquals a (GuardedBranch e) => ToGuarded (NonEmptyArray a) e where
   toGuarded tok = Guarded <<< map (go <<< TypeEquals.to)
     where

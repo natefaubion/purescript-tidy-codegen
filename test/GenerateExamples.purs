@@ -19,7 +19,7 @@ import PureScript.CST.Parser.Monad (PositionedError)
 import PureScript.CST.Traversal (defaultMonoidalVisitor, foldMapExpr)
 import PureScript.CST.Types (Comment(..), Declaration(..), Expr(..), Guarded(..), Ident(..), Labeled(..), Module(..), ModuleBody(..), ModuleName, Name(..), Where(..))
 import Tidy.Codegen (declSignature, declValue, exprApp, exprArray, exprIdent, exprString, leading, printModule, typeApp, typeCtor)
-import Tidy.Codegen.Monad (codegenModule, importCtor, importFrom, importOpen, importType, importValue, write)
+import Tidy.Codegen.Monad (codegenModule, importCtor, importFrom, importOpen, importType, importTypeAll, importValue, write)
 
 data GenerateError = ExampleParseError String PositionedError
 
@@ -53,6 +53,7 @@ generateExamplesModule modName src = case parseModule src of
           exprLog <- importFrom "Effect.Class.Console" (importValue "log")
           exprUnsafePartial <- importFrom "Partial.Unsafe" (importValue "unsafePartial")
           typeModule <- importFrom "PureScript.CST.Types" (importType "Module")
+          _ <- importFrom "PureScript.CST.Types" (importTypeAll "Fixity")
           exprPrintModule <- importFrom "Tidy.Codegen" (importValue "printModule")
           exprModule <- importFrom "Tidy.Codegen" (importValue "module_")
           examples <- for right \(Tuple (Ident ident) (Tuple exampleType expr)) -> do

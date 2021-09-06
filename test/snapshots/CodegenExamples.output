@@ -52,3 +52,39 @@ letBinderExample = let { name } = user in name
 doLetExample = do
   let { age } = user
   age
+
+doDiscardExample = do
+  logoutUser user
+  pure (httpStatus 200)
+
+doBindExample = do
+  { followers } <- getUser user
+  pure followers
+
+getName user = name
+  where
+  { name } = user
+
+countDown n
+  | n > 0 = countDown (n - 1)
+  | otherwise = n
+
+binderWildcardExample = \_ -> countDown 100
+data Either a b = Left a | Right b
+type UserFields r = (id :: UserId, name :: String, age :: Int | r)
+newtype UserId = UserId String
+
+class Eq a <= Ord a where
+  compare :: a -> a -> Ordering
+
+instance IsTypeEqual a a True
+else instance IsTypeEqual a b False
+
+derive instance Eq UserId
+derive newtype instance Eq UserId
+countDown n
+  | n > 0 = countDown (n - 1)
+  | otherwise = n
+
+infixl 4 map as <$>
+infixr 0 RowApply as +

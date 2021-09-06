@@ -197,6 +197,9 @@ importClass = withQualifiedName (ImportName <<< CodegenImportClass)
 importType :: forall name. ToToken name (Qualified Proper) => name -> ImportName Proper
 importType = withQualifiedName (ImportName <<< CodegenImportType false)
 
+importTypeAll :: forall name. ToToken name (Qualified Proper) => name -> ImportName Proper
+importTypeAll = withQualifiedName (ImportName <<< CodegenImportType true)
+
 importCtor :: forall ty ctor. ToToken ty Proper => ToToken ctor (Qualified Proper) => ty -> ctor -> ImportName Proper
 importCtor = withQualifiedName <<< const <<< ImportName <<< CodegenImportType true <<< snd <<< toToken
 
