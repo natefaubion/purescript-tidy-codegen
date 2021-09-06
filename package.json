@@ -2,7 +2,7 @@
   "name": "purescript-tidy-codegen",
   "scripts": {
     "clean-examples": "rm test/snapshots/*Examples.purs || true",
-    "generate-examples": "spago test -a '--generate=./src/PureScript/CST/Codegen.purs:CodegenExamples'",
+    "generate-examples": "spago test -a '--generate=./src/Tidy/Codegen.purs:CodegenExamples'",
     "pretest": "npm run clean-examples && npm run generate-examples",
     "test": "spago test"
   }
