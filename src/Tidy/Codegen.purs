@@ -1,4 +1,4 @@
-module PureScript.CST.Codegen where
+module Tidy.Codegen where
 
 import Prelude
 
@@ -16,18 +16,18 @@ import Data.String.CodeUnits as SCU
 import Data.Tuple (Tuple(..), curry)
 import Dodo (plainText)
 import Dodo as Dodo
-import PureScript.CST.Codegen.Class (class OverLeadingComments, class OverTrailingComments, class ToFixityName, class ToGuarded, class ToName, class ToNonEmptyArray, class ToQualifiedName, class ToRecordLabeled, class ToWhere, ErrorPrefix(..), overLeadingComments, overTrailingComments, toFixityName, toGuarded, toName, toNonEmptyArray, toQualifiedName, toRecordLabeled, toToken, toWhere)
-import PureScript.CST.Codegen.Common (toDelimited, toDelimitedNonEmpty, toOneOrDelimited, toParenList, toSeparated, toSourceToken, toWrapped, tokAdo, tokAll, tokAs, tokAt, tokBackslash, tokCase, tokClass, tokComma, tokData, tokDerive, tokDo, tokDot, tokDoubleColon, tokElse, tokEquals, tokFalse, tokForFixity, tokForRole, tokForall, tokForeign, tokHiding, tokIf, tokImport, tokIn, tokInstance, tokLeftArrow, tokLeftBrace, tokLeftFatArrow, tokLeftParen, tokLeftSquare, tokLet, tokModule, tokNegate, tokNewtype, tokOf, tokPipe, tokRightArrow, tokRightBrace, tokRightFatArrow, tokRightParen, tokRightSquare, tokRole, tokSymbolArrow, tokThen, tokTick, tokTrue, tokType, tokUnderscore, tokWhere)
-import PureScript.CST.Codegen.Precedence (precBinder0, precBinder1, precBinder2, precExpr0, precExpr1, precExpr2, precExpr3, precExpr5, precExpr6, precExpr7, precExprApp, precExprAppLast, precExprInfix, precInitLast, precType0, precType1, precType2, precType3)
-import PureScript.CST.Codegen.String (escapeSourceString)
-import PureScript.CST.Codegen.Types (BinaryOp(..), GuardedBranch(..), SymbolName(..), ClassMember)
-import PureScript.CST.Tidy (ImportWrapOption(..), TypeArrowOption(..), UnicodeOption(..), defaultFormatOptions, formatModule, toDoc)
-import PureScript.CST.Tidy.Operators (parseOperatorTable)
-import PureScript.CST.Tidy.Operators.Defaults (defaultOperators)
-import PureScript.CST.Tidy.Precedence (PrecedenceMap)
 import PureScript.CST.Types (Binder(..), ClassFundep, Comment(..), DataCtor(..), DataMembers(..), Declaration(..), DoStatement(..), Export(..), Expr(..), Fixity, FixityOp(..), Foreign(..), Guarded, Ident, Import(..), ImportDecl(..), Instance(..), InstanceBinding(..), InstanceHead, IntValue(..), Label, Labeled(..), LetBinding(..), LineFeed(..), Module(..), ModuleBody(..), ModuleHeader(..), ModuleName, Name, Operator(..), PatternGuard(..), Proper, QualifiedName(..), RecordUpdate(..), Role, Separated(..), SourceToken, Token(..), Type(..), TypeVarBinding(..), Where(..), Wrapped(..))
 import PureScript.CST.Types as CST
 import Safe.Coerce (coerce)
+import Tidy (ImportWrapOption(..), TypeArrowOption(..), UnicodeOption(..), defaultFormatOptions, formatModule, toDoc)
+import Tidy.Codegen.Class (class OverLeadingComments, class OverTrailingComments, class ToFixityName, class ToGuarded, class ToName, class ToNonEmptyArray, class ToQualifiedName, class ToRecordLabeled, class ToWhere, ErrorPrefix(..), overLeadingComments, overTrailingComments, toFixityName, toGuarded, toName, toNonEmptyArray, toQualifiedName, toRecordLabeled, toToken, toWhere)
+import Tidy.Codegen.Common (toDelimited, toDelimitedNonEmpty, toOneOrDelimited, toParenList, toSeparated, toSourceToken, toWrapped, tokAdo, tokAll, tokAs, tokAt, tokBackslash, tokCase, tokClass, tokComma, tokData, tokDerive, tokDo, tokDot, tokDoubleColon, tokElse, tokEquals, tokFalse, tokForFixity, tokForRole, tokForall, tokForeign, tokHiding, tokIf, tokImport, tokIn, tokInstance, tokLeftArrow, tokLeftBrace, tokLeftFatArrow, tokLeftParen, tokLeftSquare, tokLet, tokModule, tokNegate, tokNewtype, tokOf, tokPipe, tokRightArrow, tokRightBrace, tokRightFatArrow, tokRightParen, tokRightSquare, tokRole, tokSymbolArrow, tokThen, tokTick, tokTrue, tokType, tokUnderscore, tokWhere)
+import Tidy.Codegen.Precedence (precBinder0, precBinder1, precBinder2, precExpr0, precExpr1, precExpr2, precExpr3, precExpr5, precExpr6, precExpr7, precExprApp, precExprAppLast, precExprInfix, precInitLast, precType0, precType1, precType2, precType3)
+import Tidy.Codegen.String (escapeSourceString)
+import Tidy.Codegen.Types (BinaryOp(..), GuardedBranch(..), SymbolName(..), ClassMember)
+import Tidy.Operators (parseOperatorTable)
+import Tidy.Operators.Defaults (defaultOperators)
+import Tidy.Precedence (PrecedenceMap)
 
 type PrintOptions =
   { importWrap :: ImportWrapOption

@@ -45,7 +45,7 @@ let additions =
           ]
         , repo =
             "https://github.com/natefaubion/purescript-tidy.git"
-        , version = "8fa8516bcf8d40ea3137b62c5f984ed898c7b11c"
+        , version = "d0ae49b9314f5f4c9b918e3744d287f557142d6e"
         }
       }
 

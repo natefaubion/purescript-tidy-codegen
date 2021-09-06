@@ -5,9 +5,9 @@ import Prelude
 import Effect (Effect)
 import Effect.Class.Console as Console
 import Partial.Unsafe (unsafePartial)
-import PureScript.CST.Codegen (binaryOp, binderVar, declSignature, declValue, exprApp, exprCtor, exprIdent, exprInt, exprOp, printModule, typeApp, typeArrow, typeCtor)
-import PureScript.CST.Codegen.Monad (codegenModule, exporting, importCtor, importFrom, importOpen, importType, importValue, write)
 import PureScript.CST.Types (Module)
+import Tidy.Codegen (binaryOp, binderVar, declSignature, declValue, exprApp, exprCtor, exprIdent, exprInt, exprOp, printModule, typeApp, typeArrow, typeCtor)
+import Tidy.Codegen.Monad (codegenModule, exporting, importCtor, importFrom, importOpen, importType, importValue, write)
 
 test :: Module Void
 test = unsafePartial do

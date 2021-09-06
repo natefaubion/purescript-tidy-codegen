@@ -1,4 +1,4 @@
-module PureScript.CST.Codegen.Class where
+module Tidy.Codegen.Class where
 
 import Prelude
 
@@ -11,13 +11,13 @@ import Data.Newtype (over, unwrap)
 import Data.Tuple (Tuple(..), snd)
 import Partial (crashWith)
 import Partial.Unsafe (unsafePartial)
-import PureScript.CST.Codegen.Common (toSeparated, toSourceToken, tokColon, tokComma, tokForFixity, tokForRole, tokPipe)
-import PureScript.CST.Codegen.String (escapeSourceString)
-import PureScript.CST.Codegen.Types (GuardedBranch(..), Qualified(..), SymbolName(..))
 import PureScript.CST.Lexer (lexToken)
 import PureScript.CST.Types (Binder(..), Comment, Declaration(..), Expr(..), Fixity(..), Guarded(..), GuardedExpr(..), Ident(..), ImportDecl(..), Instance(..), IntValue(..), Label(..), Labeled(..), LineFeed, Module(..), ModuleBody(..), ModuleHeader(..), ModuleName(..), Name(..), Operator(..), Proper(..), QualifiedName(..), RecordLabeled(..), Role(..), Separated(..), SourceToken, Token(..), Type(..), Where(..), Wrapped(..))
 import PureScript.CST.Types as CST
 import Safe.Coerce (coerce)
+import Tidy.Codegen.Common (toSeparated, toSourceToken, tokColon, tokComma, tokForFixity, tokForRole, tokPipe)
+import Tidy.Codegen.String (escapeSourceString)
+import Tidy.Codegen.Types (GuardedBranch(..), Qualified(..), SymbolName(..))
 import Type.Equality (class TypeEquals, proof)
 import Type.Equality as TypeEquals
 

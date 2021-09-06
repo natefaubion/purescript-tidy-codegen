@@ -1,4 +1,4 @@
-module PureScript.CST.Codegen.Common where
+module Tidy.Codegen.Common where
 
 import Prelude
 

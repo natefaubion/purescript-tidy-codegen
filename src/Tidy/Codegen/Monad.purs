@@ -1,4 +1,4 @@
-module PureScript.CST.Codegen.Monad where
+module Tidy.Codegen.Monad where
 
 import Prelude
 
@@ -15,13 +15,13 @@ import Data.Maybe (Maybe(..))
 import Data.Set (Set)
 import Data.Set as Set
 import Data.Tuple (Tuple(..), snd)
-import PureScript.CST.Codegen (module_)
-import PureScript.CST.Codegen as Codegen
-import PureScript.CST.Codegen.Class (class ToModuleName, class ToName, class ToToken, toModuleName, toToken)
-import PureScript.CST.Codegen.Common (toSourceToken)
-import PureScript.CST.Codegen.Types (Qualified(..), SymbolName(..))
 import PureScript.CST.Types (Declaration(..), Export, Foreign(..), Ident, Import, Labeled(..), Module, ModuleName, Name(..), Operator(..), Proper, QualifiedName(..))
 import Safe.Coerce (coerce)
+import Tidy.Codegen (module_)
+import Tidy.Codegen as Codegen
+import Tidy.Codegen.Class (class ToModuleName, class ToName, class ToToken, toModuleName, toToken)
+import Tidy.Codegen.Common (toSourceToken)
+import Tidy.Codegen.Types (Qualified(..), SymbolName(..))
 
 data CodegenExport
   = CodegenExportType Boolean Proper

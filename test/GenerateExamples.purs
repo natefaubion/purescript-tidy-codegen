@@ -15,11 +15,11 @@ import Data.Traversable (for, sequence)
 import Data.Tuple (Tuple(..))
 import Partial.Unsafe (unsafePartial)
 import PureScript.CST (RecoveredParserResult(..), parseDecl, parseModule)
-import PureScript.CST.Codegen (declSignature, declValue, exprApp, exprArray, exprIdent, exprString, leading, printModule, typeApp, typeCtor)
-import PureScript.CST.Codegen.Monad (codegenModule, importCtor, importFrom, importOpen, importType, importValue, write)
 import PureScript.CST.Parser.Monad (PositionedError)
 import PureScript.CST.Traversal (defaultMonoidalVisitor, foldMapExpr)
 import PureScript.CST.Types (Comment(..), Declaration(..), Expr(..), Guarded(..), Ident(..), Labeled(..), Module(..), ModuleBody(..), ModuleName, Name(..), Where(..))
+import Tidy.Codegen (declSignature, declValue, exprApp, exprArray, exprIdent, exprString, leading, printModule, typeApp, typeCtor)
+import Tidy.Codegen.Monad (codegenModule, importCtor, importFrom, importOpen, importType, importValue, write)
 
 data GenerateError = ExampleParseError String PositionedError
 
@@ -53,15 +53,15 @@ generateExamplesModule modName src = case parseModule src of
           exprLog <- importFrom "Effect.Class.Console" (importValue "log")
           exprUnsafePartial <- importFrom "Partial.Unsafe" (importValue "unsafePartial")
           typeModule <- importFrom "PureScript.CST.Types" (importType "Module")
-          exprPrintModule <- importFrom "PureScript.CST.Codegen" (importValue "printModule")
-          exprModule <- importFrom "PureScript.CST.Codegen" (importValue "module_")
+          exprPrintModule <- importFrom "Tidy.Codegen" (importValue "printModule")
+          exprModule <- importFrom "Tidy.Codegen" (importValue "module_")
           examples <- for right \(Tuple (Ident ident) (Tuple exampleType expr)) -> do
             let
               imports :: Array _
               imports = expr # foldMapExpr defaultMonoidalVisitor
                 { onExpr = case _ of
                     ExprIdent qual ->
-                      pure $ importFrom "PureScript.CST.Codegen" (importValue qual)
+                      pure $ importFrom "Tidy.Codegen" (importValue qual)
                     _ ->
                       mempty
                 }
@@ -70,14 +70,14 @@ generateExamplesModule modName src = case parseModule src of
               ExampleDecl ->
                 pure expr
               ExampleType -> do
-                exprDeclType <- importFrom "PureScript.CST.Codegen" (importValue "declType")
+                exprDeclType <- importFrom "Tidy.Codegen" (importValue "declType")
                 pure $ exprApp (exprIdent exprDeclType)
                   [ exprString (String.toUpper (String.take 1 ident) <> String.drop 1 ident <> "Example")
                   , exprArray []
                   , expr
                   ]
               ExampleExpr -> do
-                exprDeclValue <- importFrom "PureScript.CST.Codegen" (importValue "declValue")
+                exprDeclValue <- importFrom "Tidy.Codegen" (importValue "declValue")
                 pure $ exprApp (exprIdent exprDeclValue)
                   [ exprString (ident <> "Example")
                   , exprArray []

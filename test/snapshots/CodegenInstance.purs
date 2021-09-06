@@ -6,8 +6,8 @@ import Data.Maybe (Maybe(..))
 import Effect (Effect)
 import Effect.Class.Console as Console
 import Partial.Unsafe (unsafePartial)
-import PureScript.CST.Codegen (binderCtor, binderVar, caseBranch, declInstance, declInstanceChain, exprApp, exprCase, exprCtor, exprIdent, instName, module_, printModule, typeApp, typeCtor, typeVar)
 import PureScript.CST.Types (Module)
+import Tidy.Codegen (binderCtor, binderVar, caseBranch, declInstance, declInstanceChain, exprApp, exprCase, exprCtor, exprIdent, instName, module_, printModule, typeApp, typeCtor, typeVar)
 
 test :: Module Void
 test = unsafePartial do

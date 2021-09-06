@@ -7,8 +7,8 @@ import Data.Tuple (Tuple(..))
 import Effect (Effect)
 import Effect.Class.Console as Console
 import Partial.Unsafe (unsafePartial)
-import PureScript.CST.Codegen (declType, declTypeSignature, module_, printModule, typeApp, typeArrow, typeCtor, typeForall, typeRow, typeVar)
 import PureScript.CST.Types (Module)
+import Tidy.Codegen (declType, declTypeSignature, module_, printModule, typeApp, typeArrow, typeCtor, typeForall, typeRow, typeVar)
 
 test :: Module Void
 test = unsafePartial do

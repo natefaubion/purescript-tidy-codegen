@@ -1,4 +1,4 @@
-module PureScript.CST.Codegen.Precedence where
+module Tidy.Codegen.Precedence where
 
 import Prelude
 
@@ -6,9 +6,9 @@ import Data.Array as Array
 import Data.Array.NonEmpty (NonEmptyArray)
 import Data.Array.NonEmpty as NonEmptyArray
 import Data.Maybe (Maybe(..))
-import PureScript.CST.Codegen.Common (toWrapped, tokLeftParen, tokRightParen)
 import PureScript.CST.Types (Binder(..), Expr(..), Type(..))
 import PureScript.CST.Types as CST
+import Tidy.Codegen.Common (toWrapped, tokLeftParen, tokRightParen)
 
 typeParens :: forall e. CST.Type e -> CST.Type e
 typeParens = TypeParens <<< toWrapped tokLeftParen tokRightParen

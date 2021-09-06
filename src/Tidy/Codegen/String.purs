@@ -1,4 +1,4 @@
-module PureScript.CST.Codegen.String where
+module Tidy.Codegen.String where
 
 import Prelude
 
@@ -13,7 +13,7 @@ import Data.Set as Set
 import Data.String (CodePoint, codePointFromChar)
 import Data.String as String
 import Data.String.CodeUnits as SCU
-import PureScript.CST.Codegen.Types (SourceString(..))
+import Tidy.Codegen.Types (SourceString(..))
 
 escapeSourceString :: String -> SourceString
 escapeSourceString = SourceString <<< Array.foldMap escape <<< String.toCodePointArray

@@ -5,8 +5,8 @@ import Prelude
 import Effect (Effect)
 import Effect.Class.Console as Console
 import Partial.Unsafe (unsafePartial)
-import PureScript.CST.Codegen (classMember, declClass, module_, printModule, typeApp, typeArrow, typeForall, typeVar)
 import PureScript.CST.Types (Module)
+import Tidy.Codegen (classMember, declClass, module_, printModule, typeApp, typeArrow, typeForall, typeVar)
 
 test :: Module Void
 test = unsafePartial do
