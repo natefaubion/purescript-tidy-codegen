@@ -1,10 +1,41 @@
-module Tidy.Codegen.Monad where
+module Tidy.Codegen.Monad
+  ( CodegenState
+  , CodegenT(..)
+  , Codegen
+  , CodegenExport(..)
+  , CodegenImport(..)
+  , ImportName(..)
+  , write
+  , writeAndExport
+  , exportValue
+  , exportOp
+  , exportType
+  , exportTypeAll
+  , exportTypeOp
+  , exportClass
+  , exportModule
+  , exporting
+  , importFrom
+  , importOpen
+  , importValue
+  , importOp
+  , importType
+  , importTypeAll
+  , importTypeOp
+  , importClass
+  , importCtor
+  , codegenModule
+  , runCodegenT
+  , runCodegenTModule
+  , moduleFromCodegenState
+  ) where
 
 import Prelude
 
 import Control.Monad.Free (Free, runFree)
 import Control.Monad.State (class MonadTrans, StateT, modify_, runStateT, state)
 import Data.Array as Array
+import Data.Either (Either(..), either)
 import Data.Foldable (fold, for_)
 import Data.Identity (Identity(..))
 import Data.List (List)
@@ -14,7 +45,7 @@ import Data.Map as Map
 import Data.Maybe (Maybe(..))
 import Data.Set (Set)
 import Data.Set as Set
-import Data.Tuple (Tuple(..), snd)
+import Data.Tuple (Tuple(..), fst, snd)
 import PureScript.CST.Types (Declaration(..), Export, Foreign(..), Ident, Import, Labeled(..), Module, ModuleName, Name(..), Operator(..), Proper, QualifiedName(..))
 import Safe.Coerce (coerce)
 import Tidy.Codegen (module_)
@@ -63,6 +94,7 @@ derive newtype instance MonadTrans (CodegenT e)
 
 type Codegen e = CodegenT e (Free Identity)
 
+-- | Exports a specific reference.
 export :: forall e m. Monad m => CodegenExport -> CodegenT e m Unit
 export exp = CodegenT $ modify_ \st -> st
   { exports = case exp of
@@ -74,30 +106,39 @@ export exp = CodegenT $ modify_ \st -> st
         Set.insert exp st.exports
   }
 
+-- | Exports a value.
 exportValue :: forall e m name. Monad m => ToToken name Ident => name -> CodegenT e m Unit
 exportValue = export <<< CodegenExportValue <<< snd <<< toToken
 
+-- | Exports an operator.
 exportOp :: forall e m name. Monad m => ToToken name SymbolName => name -> CodegenT e m Unit
 exportOp = export <<< CodegenExportOp <<< snd <<< toToken
 
+-- | Exports a type.
 exportType :: forall e m name. Monad m => ToToken name Proper => name -> CodegenT e m Unit
 exportType = export <<< CodegenExportType false <<< snd <<< toToken
 
+-- | Exports a type with all data members.
 exportTypeAll :: forall e m name. Monad m => ToToken name Proper => name -> CodegenT e m Unit
 exportTypeAll = export <<< CodegenExportType true <<< snd <<< toToken
 
+-- | Exports a type operator.
 exportTypeOp :: forall e m name. Monad m => ToToken name SymbolName => name -> CodegenT e m Unit
 exportTypeOp = export <<< CodegenExportTypeOp <<< snd <<< toToken
 
+-- | Exports a class.
 exportClass :: forall e m name. Monad m => ToToken name Proper => name -> CodegenT e m Unit
 exportClass = export <<< CodegenExportClass <<< snd <<< toToken
 
+-- | Exports a module re-export.
 exportModule :: forall e m name. Monad m => ToToken name ModuleName => name -> CodegenT e m Unit
 exportModule = export <<< CodegenExportModule <<< snd <<< toToken
 
+-- | Writes a declaration to the module.
 write :: forall m e. Monad m => Declaration e -> CodegenT e m Unit
 write decl = CodegenT $ modify_ \st -> st { declarations = List.Cons decl st.declarations }
 
+-- | Writes a declaration and exports it.
 writeAndExport :: forall m e. Monad m => Declaration e -> CodegenT e m Unit
 writeAndExport decl = do
   write decl
@@ -128,6 +169,7 @@ writeAndExport decl = do
     _ ->
       pure unit
 
+-- | Exports all declarations written within the provided block.
 exporting :: forall e m a. Monad m => CodegenT e m a -> CodegenT e m a
 exporting m = do
   old <- CodegenT $ state \st ->
@@ -140,6 +182,18 @@ exporting m = do
 
 data ImportName name = ImportName CodegenImport (QualifiedName name)
 
+-- | Imports from a particular module, yielding a `QualifiedName` which can be
+-- | used with the `Tidy.Codegen` constructors. If the requested import is
+-- | qualified, an appropriate qualified import will be generated.
+-- |
+-- | ```purescript
+-- | example = do
+-- |   -- Generates a `import Effect.Class.Console as Console` import
+-- |   consoleLog <- importFrom "Effect.Class.Console" (importValue "Console.log")
+-- |   -- Generates a `import Data.Map (Map)` import
+-- |   mapType <- importFrom "Data.Map" (importType "Map")
+-- |   ...
+-- | ```
 importFrom
   :: forall e m mod name
    . Monad m
@@ -173,6 +227,13 @@ importFrom mod (ImportName imp qn@(QualifiedName { module: mbMod })) =
             st.importsQualified
         }
 
+-- | Imports a module with an open import.
+-- |
+-- | ```purescript
+-- | example = do
+-- |   importOpen "Prelude"
+-- |   ...
+-- | ```
 importOpen :: forall e m mod. Monad m => ToModuleName mod => mod -> CodegenT e m Unit
 importOpen mod = CodegenT $ modify_ \st ->
   st { importsOpen = Set.insert (toModuleName mod) st.importsOpen }
@@ -182,27 +243,40 @@ withQualifiedName k from = do
   let (Tuple token (Qualified mn name)) = toToken from
   k name (QualifiedName { module: mn, name, token: toSourceToken token })
 
+-- | Imports a value. Use with `importFrom`.
 importValue :: forall name. ToToken name (Qualified Ident) => name -> ImportName Ident
 importValue = withQualifiedName (ImportName <<< CodegenImportValue)
 
+-- | Imports a value operator, yield. Use with `importFrom`.
 importOp :: forall name. ToToken name (Qualified SymbolName) => name -> ImportName Operator
 importOp = withQualifiedName \a b -> ImportName (CodegenImportOp a) (coerce b)
 
+-- | Imports a type operator. Use with `importFrom`.
 importTypeOp :: forall name. ToToken name (Qualified SymbolName) => name -> ImportName Operator
 importTypeOp = withQualifiedName \a b -> ImportName (CodegenImportTypeOp a) (coerce b)
 
+-- | Imports a class. Use with `importFrom`.
 importClass :: forall name. ToToken name (Qualified Proper) => name -> ImportName Proper
 importClass = withQualifiedName (ImportName <<< CodegenImportClass)
 
+-- | Imports a type. Use with `importFrom`.
 importType :: forall name. ToToken name (Qualified Proper) => name -> ImportName Proper
 importType = withQualifiedName (ImportName <<< CodegenImportType false)
 
+-- | Imports a type. Use with `importFrom`.
 importTypeAll :: forall name. ToToken name (Qualified Proper) => name -> ImportName Proper
 importTypeAll = withQualifiedName (ImportName <<< CodegenImportType true)
 
+-- | Imports a data constructor for a type. Use with `importFrom`.
+-- |
+-- | ```purescript
+-- | example = do
+-- |   just <- importFrom "Data.Maybe" (importCtor "Maybe" "Just")
+-- | ```
 importCtor :: forall ty ctor. ToToken ty Proper => ToToken ctor (Qualified Proper) => ty -> ctor -> ImportName Proper
 importCtor = withQualifiedName <<< const <<< ImportName <<< CodegenImportType true <<< snd <<< toToken
 
+-- | Extracts codegen state and the produced value.
 runCodegenT :: forall m e a. CodegenT e m a -> m (Tuple a (CodegenState e))
 runCodegenT (CodegenT m) = runStateT m
   { exports: Set.empty
@@ -212,12 +286,15 @@ runCodegenT (CodegenT m) = runStateT m
   , declarations: List.Nil
   }
 
+-- | Extracts a CST Module and the produced value.
 runCodegenTModule :: forall e m a name. Functor m => ToName name ModuleName => name -> CodegenT e m a -> m (Tuple a (Module e))
 runCodegenTModule name = map (map (moduleFromCodegenState name)) <<< runCodegenT
 
+-- | Extracts a CST Module.
 codegenModule :: forall e name. ToName name ModuleName => name -> Codegen e Unit -> Module e
 codegenModule name = snd <<< runFree coerce <<< runCodegenTModule name
 
+-- | Constructs a CST Module from codegen state.
 moduleFromCodegenState :: forall e name. ToName name ModuleName => name -> CodegenState e -> Module e
 moduleFromCodegenState name st = module_ name exports (importsOpen <> importsNamed) decls
   where
@@ -237,19 +314,19 @@ moduleFromCodegenState name st = module_ name exports (importsOpen <> importsNam
       # map (flip Codegen.declImport [])
       # withLeadingBreaks
 
-  importsFrom =
-    st.importsFrom
-      # Map.toUnfoldable
-      # map (map (map codegenImportToCST <<< Array.fromFoldable))
+  importsFrom = do
+    Tuple mn imps <- Map.toUnfoldable st.importsFrom
+    pure $ Tuple mn $ Codegen.declImport mn $ codegenImportToCST <$> Set.toUnfoldable imps
+
+  importsQualified = do
+    Tuple mn quals <- Map.toUnfoldable st.importsQualified
+    qual <- Set.toUnfoldable quals
+    pure $ Tuple mn $ Codegen.declImportAs mn [] qual
 
   importsNamed = withLeadingBreaks do
-    Tuple mn imps <- importsFrom
-    case Map.lookup mn st.importsQualified of
-      Nothing ->
-        pure $ Codegen.declImport mn imps
-      Just quals ->
-        Array.cons (Codegen.declImport mn imps)
-          $ Codegen.declImportAs mn [] <$> Array.fromFoldable quals
+    (map (map Left) importsFrom <> map (map Right) importsQualified)
+      # Array.sortBy (comparing fst)
+      # map (either identity identity <<< snd)
 
   withLeadingBreaks =
     fold <<< Array.modifyAt 0 (Codegen.leading (Codegen.lineBreaks 2))
