@@ -1,0 +1,12 @@
+module Data.Maybe where
+
+import Prelude
+
+data Maybe a = Nothing | Just a
+
+derive instance Functor Maybe
+
+maybe :: forall a b. b -> (a -> b) -> Maybe a -> b
+maybe nothing just = case _ of
+  Just a -> just a
+  Nothing -> nothing

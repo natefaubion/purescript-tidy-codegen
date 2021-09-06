@@ -34,9 +34,10 @@ import Prelude
 
 import Control.Monad.Free (Free, runFree)
 import Control.Monad.State (class MonadTrans, StateT, modify_, runStateT, state)
+import Control.Monad.Writer (class MonadTell)
 import Data.Array as Array
 import Data.Either (Either(..), either)
-import Data.Foldable (fold, for_)
+import Data.Foldable (fold, for_, traverse_)
 import Data.Identity (Identity(..))
 import Data.List (List)
 import Data.List as List
@@ -91,6 +92,9 @@ derive newtype instance Monad m => Applicative (CodegenT e m)
 derive newtype instance Monad m => Bind (CodegenT e m)
 derive newtype instance Monad m => Monad (CodegenT e m)
 derive newtype instance MonadTrans (CodegenT e)
+
+instance Monad m => MonadTell (Array (Declaration e)) (CodegenT e m)  where
+  tell = traverse_ write
 
 type Codegen e = CodegenT e (Free Identity)
 
