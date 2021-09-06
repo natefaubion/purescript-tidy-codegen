@@ -93,7 +93,7 @@ derive newtype instance Monad m => Bind (CodegenT e m)
 derive newtype instance Monad m => Monad (CodegenT e m)
 derive newtype instance MonadTrans (CodegenT e)
 
-instance Monad m => MonadTell (Array (Declaration e)) (CodegenT e m)  where
+instance Monad m => MonadTell (Array (Declaration e)) (CodegenT e m) where
   tell = traverse_ write
 
 type Codegen e = CodegenT e (Free Identity)
