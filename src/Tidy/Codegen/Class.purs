@@ -6,11 +6,11 @@ import Data.Array.NonEmpty (NonEmptyArray)
 import Data.Array.NonEmpty as NonEmptyArray
 import Data.Bifunctor (lmap)
 import Data.Either (Either(..))
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Newtype (over, unwrap)
+import Data.String as String
 import Data.Tuple (Tuple(..), snd)
 import Partial (crashWith)
-import Partial.Unsafe (unsafePartial)
 import PureScript.CST.Lexer (lexToken)
 import PureScript.CST.Types (Binder(..), Comment, Declaration(..), Expr(..), Fixity(..), Guarded(..), GuardedExpr(..), Ident(..), ImportDecl(..), Instance(..), IntValue(..), Label(..), Labeled(..), LineFeed, Module(..), ModuleBody(..), ModuleHeader(..), ModuleName(..), Name(..), Operator(..), Proper(..), QualifiedName(..), RecordLabeled(..), Role(..), Separated(..), SourceToken, Token(..), Type(..), Where(..), Wrapped(..))
 import PureScript.CST.Types as CST
@@ -48,17 +48,26 @@ class ToToken a b where
 instance Partial => ToToken String Ident where
   toToken = toTokenFromString (ErrorPrefix "Not an Ident")
 
+instance ToToken (Name Ident) Ident where
+  toToken (Name { name, token }) = Tuple token.value name
+
 instance ToToken Ident Ident where
   toToken str = Tuple (TokLowerName Nothing (unwrap str)) str
 
 instance Partial => ToToken String Proper where
   toToken = toTokenFromString (ErrorPrefix "Not a Proper")
 
+instance ToToken (Name Proper) Proper where
+  toToken (Name { name, token }) = Tuple token.value name
+
 instance ToToken Proper Proper where
   toToken str = Tuple (TokUpperName Nothing (unwrap str)) str
 
 instance Partial => ToToken String Operator where
   toToken = toTokenFromString (ErrorPrefix "Not an Operator")
+
+instance ToToken (Name Operator) Operator where
+  toToken (Name { name, token }) = Tuple token.value name
 
 instance ToToken Operator Operator where
   toToken str = Tuple (TokOperator Nothing (unwrap str)) str
@@ -69,6 +78,9 @@ instance Partial => ToToken String SymbolName where
     Right (TokOperator Nothing sym) -> Tuple (TokSymbolName Nothing sym) (SymbolName str)
     _ -> crashWith $ "Not a SymbolName: " <> str
 
+instance ToToken (Name SymbolName) SymbolName where
+  toToken (Name { name, token }) = Tuple token.value name
+
 instance ToToken SymbolName SymbolName where
   toToken str = Tuple (TokSymbolName Nothing (unwrap str)) str
 
@@ -78,16 +90,28 @@ instance ToToken SymbolName Operator where
 instance Partial => ToToken String ModuleName where
   toToken = toTokenFromString (ErrorPrefix "Not a ModuleName")
 
+instance ToToken (Name ModuleName) ModuleName where
+  toToken (Name { name, token }) = Tuple token.value name
+
+instance ToToken ModuleName ModuleName where
+  toToken (ModuleName name) = Tuple token (ModuleName name)
+    where
+    token = fromMaybe (TokUpperName Nothing name) do
+      ix <- String.lastIndexOf (String.Pattern ".") name
+      let qual = String.take ix name
+      let mod = String.drop (ix + 1) name
+      pure $ TokUpperName (Just (ModuleName qual)) mod
+
 instance ToToken String Label where
   toToken str = case lexToken str of
     Right tok@(TokLowerName Nothing lbl) -> Tuple tok (Label lbl)
     _ -> toToken (Label str)
 
+instance ToToken (Name Label) Label where
+  toToken (Name { name, token }) = Tuple token.value name
+
 instance ToToken Label Label where
   toToken (Label lbl) = Tuple (TokString (unwrap (escapeSourceString lbl)) lbl) (Label lbl)
-
-instance ToToken ModuleName ModuleName where
-  toToken = unsafePartial (toToken <<< unwrap)
 
 instance ToToken Int IntValue where
   toToken n = Tuple (TokInt (show n) (SmallInt n)) (SmallInt n)
@@ -113,11 +137,17 @@ instance ToToken Role Role where
 instance Partial => ToToken String (Qualified Ident) where
   toToken = toTokenFromString (ErrorPrefix "Not a Qualified dIdent")
 
+instance ToToken (Name Ident) (Qualified Ident) where
+  toToken (Name { name, token }) = Tuple token.value (Qualified Nothing name)
+
 instance ToToken (Qualified Ident) (Qualified Ident) where
   toToken qual@(Qualified mn str) = Tuple (TokLowerName mn (unwrap str)) qual
 
 instance Partial => ToToken String (Qualified Proper) where
   toToken = toTokenFromString (ErrorPrefix "Not a Qualified Proper")
+
+instance ToToken (Name Proper) (Qualified Proper) where
+  toToken (Name { name, token }) = Tuple token.value (Qualified Nothing name)
 
 instance ToToken (Qualified Proper) (Qualified Proper) where
   toToken qual@(Qualified mn str) = Tuple (TokUpperName mn (unwrap str)) qual
@@ -125,11 +155,17 @@ instance ToToken (Qualified Proper) (Qualified Proper) where
 instance Partial => ToToken String (Qualified Operator) where
   toToken = toTokenFromString (ErrorPrefix "Not a Qualified Operator")
 
+instance ToToken (Name Operator) (Qualified Operator) where
+  toToken (Name { name, token }) = Tuple token.value (Qualified Nothing name)
+
 instance ToToken (Qualified Operator) (Qualified Operator) where
   toToken qual@(Qualified mn str) = Tuple (TokOperator mn (unwrap str)) qual
 
 instance Partial => ToToken String (Qualified SymbolName) where
   toToken = toTokenFromString (ErrorPrefix "Not a Qualified SymbolName")
+
+instance ToToken (Name SymbolName) (Qualified SymbolName) where
+  toToken (Name { name, token }) = Tuple token.value (Qualified Nothing name)
 
 instance ToToken (Qualified SymbolName) (Qualified SymbolName) where
   toToken qual@(Qualified mn str) = Tuple (TokSymbolName mn (unwrap str)) qual

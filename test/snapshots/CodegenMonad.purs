@@ -11,7 +11,7 @@ import Tidy.Codegen.Monad (codegenModule, exporting, importCtor, importFrom, imp
 
 test :: Module Void
 test = unsafePartial do
-  codegenModule "Test.Data" do
+  codegenModule "Test.Monad" do
     importOpen "Prelude"
     maybeTy <- importFrom "Data.Maybe" (importType "Maybe")
     justCtor <- importFrom "Data.Maybe" (importCtor "Maybe" "Just")

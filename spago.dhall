@@ -45,6 +45,7 @@ to generate this file without the comments in this block.
   , "partial"
   , "posix-types"
   , "prelude"
+  , "record"
   , "safe-coerce"
   , "strings"
   , "tidy"

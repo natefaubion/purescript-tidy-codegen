@@ -28,6 +28,10 @@ module Tidy.Codegen.Monad
   , runCodegenT
   , runCodegenTModule
   , moduleFromCodegenState
+  , class ToImportFrom
+  , toImportFrom
+  , class ToImportFromRecord
+  , toImportFromRecord
   ) where
 
 import Prelude
@@ -46,14 +50,22 @@ import Data.Map as Map
 import Data.Maybe (Maybe(..))
 import Data.Set (Set)
 import Data.Set as Set
+import Data.Symbol (class IsSymbol)
 import Data.Tuple (Tuple(..), fst, snd)
+import Prim.Row as Row
+import Prim.RowList (class RowToList, RowList)
+import Prim.RowList as RowList
 import PureScript.CST.Types (Declaration(..), Export, Foreign(..), Ident, Import, Labeled(..), Module, ModuleName, Name(..), Operator(..), Proper, QualifiedName(..))
+import Record as Record
+import Record.Builder (Builder)
+import Record.Builder as Builder
 import Safe.Coerce (coerce)
 import Tidy.Codegen (module_)
 import Tidy.Codegen as Codegen
 import Tidy.Codegen.Class (class ToModuleName, class ToName, class ToToken, toModuleName, toToken)
 import Tidy.Codegen.Common (toSourceToken)
 import Tidy.Codegen.Types (Qualified(..), SymbolName(..))
+import Type.Proxy (Proxy(..))
 
 data CodegenExport
   = CodegenExportType Boolean Proper
@@ -196,16 +208,22 @@ data ImportName name = ImportName CodegenImport (QualifiedName name)
 -- |   consoleLog <- importFrom "Effect.Class.Console" (importValue "Console.log")
 -- |   -- Generates a `import Data.Map (Map)` import
 -- |   mapType <- importFrom "Data.Map" (importType "Map")
+-- |   -- Group multiple imports with a record
+-- |   dataMap <- import From "Data.Map"
+-- |     { type: importType "Map"
+-- |     , lookup: importValue "Map.lookup"
+-- |     }
 -- |   ...
 -- | ```
 importFrom
-  :: forall e m mod name
+  :: forall e m mod name imp
    . Monad m
   => ToModuleName mod
+  => ToImportFrom name imp
   => mod
-  -> ImportName name
-  -> CodegenT e m (QualifiedName name)
-importFrom mod (ImportName imp qn@(QualifiedName { module: mbMod })) =
+  -> name
+  -> CodegenT e m imp
+importFrom mod = toImportFrom \(ImportName imp qn@(QualifiedName { module: mbMod })) ->
   CodegenT $ state \st -> do
     Tuple qn $ case mbMod of
       Nothing -> st
@@ -355,3 +373,38 @@ codegenImportToCST = case _ of
   CodegenImportClass name -> Codegen.importClass name
   CodegenImportValue name -> Codegen.importValue name
   CodegenImportOp name -> Codegen.importOp name
+
+type ImportResolver f = forall n. ImportName n -> f (QualifiedName n)
+
+class ToImportFrom name imp | name -> imp where
+  toImportFrom :: forall f. Applicative f => ImportResolver f -> name -> f imp
+
+instance ToImportFrom (ImportName name) (QualifiedName name) where
+  toImportFrom = ($)
+
+instance
+  ( RowToList rin rl
+  , ToImportFromRecord rl (Record rin) (Record rout)
+  ) =>
+  ToImportFrom (Record rin) (Record rout) where
+  toImportFrom k = map Builder.buildFromScratch <<< toImportFromRecord k (Proxy :: _ rl)
+
+class ToImportFromRecord (rl :: RowList Type) rin rout | rl rin -> rout where
+  toImportFromRecord :: forall f. Applicative f => ImportResolver f -> Proxy rl -> rin -> f (Builder {} rout)
+
+instance
+  ( ToImportFrom val imp
+  , ToImportFromRecord rest (Record rin) (Record rout')
+  , IsSymbol sym
+  , Row.Cons sym val rx rin
+  , Row.Cons sym imp rout' rout
+  , Row.Lacks sym rout'
+  ) =>
+  ToImportFromRecord (RowList.Cons sym val rest) (Record rin) (Record rout) where
+  toImportFromRecord k _ r =
+    (\imp builder -> Builder.insert (Proxy :: _ sym) imp <<< builder)
+      <$> toImportFrom k (Record.get (Proxy :: _ sym) r)
+      <*> toImportFromRecord k (Proxy :: _ rest) r
+
+instance ToImportFromRecord (RowList.Nil) (Record rin) {} where
+  toImportFromRecord _ _ _ = pure identity

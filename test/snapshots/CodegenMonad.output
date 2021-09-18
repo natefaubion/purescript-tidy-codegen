@@ -1,4 +1,4 @@
-module Test.Data (getNum) where
+module Test.Monad (getNum) where
 
 import Prelude
 
