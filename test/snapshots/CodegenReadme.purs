@@ -5,9 +5,9 @@ import Prelude
 import Control.Monad.Writer (tell)
 import Data.Maybe (Maybe(..))
 import Effect (Effect)
-import Effect.Class.Console as Console
 import Partial.Unsafe (unsafePartial)
 import PureScript.CST.Types (Module)
+import Test.Util (log)
 import Tidy.Codegen (binderCtor, binderVar, caseBranch, dataCtor, declData, declDerive, declSignature, declValue, exprApp, exprCase, exprIdent, exprSection, printModule, typeApp, typeArrow, typeCtor, typeForall, typeVar)
 import Tidy.Codegen.Monad (codegenModule, importOpen)
 
@@ -40,4 +40,4 @@ test = unsafePartial $ codegenModule "Data.Maybe" do
     ]
 
 main :: Effect Unit
-main = Console.log (printModule test)
+main = log $ printModule test

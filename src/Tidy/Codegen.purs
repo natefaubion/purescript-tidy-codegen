@@ -204,7 +204,10 @@ printModule = printModuleWithOptions defaultPrintOptions
 printModuleWithOptions :: PrintOptions -> Module Void -> String
 printModuleWithOptions options mod =
   -- Eta-expanded to defer operator parsing
-  Dodo.print plainText dodoOptions $ toDoc $ formatModule formatOptions mod
+  Dodo.print plainText dodoOptions
+    $ toDoc
+    $ formatModule formatOptions
+    $ overTrailingComments addTrailingBreak mod
   where
   dodoOptions =
     { indentUnit: options.indentUnit
@@ -212,12 +215,19 @@ printModuleWithOptions options mod =
     , pageWidth: options.pageWidth
     , ribbonRatio: options.ribbonRatio
     }
+
   formatOptions = defaultFormatOptions
     { importWrap = options.importWrap
     , operators = Lazy.force options.operators
     , typeArrowPlacement = options.typeArrowPlacement
     , unicode = options.unicode
     }
+
+  addTrailingBreak comments = case Array.last comments of
+    Just (Line _ n) | n > 0 ->
+      comments
+    _ ->
+      comments <> lineBreaks 1
 
 -- | An overloaded binary operator constructor. Use with `exprOp`, `typeOp`,
 -- | or `binderOp`.

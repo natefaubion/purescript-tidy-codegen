@@ -3,9 +3,9 @@ module CodegenClass where
 import Prelude
 
 import Effect (Effect)
-import Effect.Class.Console as Console
 import Partial.Unsafe (unsafePartial)
 import PureScript.CST.Types (Module)
+import Test.Util (log)
 import Tidy.Codegen (classMember, declClass, module_, printModule, typeApp, typeArrow, typeForall, typeVar)
 
 test :: Module Void
@@ -23,4 +23,4 @@ test = unsafePartial do
     ]
 
 main :: Effect Unit
-main = Console.log $ printModule test
+main = log $ printModule test

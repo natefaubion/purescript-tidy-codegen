@@ -3,9 +3,9 @@ module CodegenMonad where
 import Prelude
 
 import Effect (Effect)
-import Effect.Class.Console as Console
 import Partial.Unsafe (unsafePartial)
 import PureScript.CST.Types (Module)
+import Test.Util (log)
 import Tidy.Codegen (binaryOp, binderVar, declSignature, declValue, exprApp, exprCtor, exprIdent, exprInt, exprOp, printModule, typeApp, typeArrow, typeCtor)
 import Tidy.Codegen.Monad (codegenModule, exporting, importCtor, importFrom, importOpen, importType, importValue, write)
 
@@ -41,4 +41,4 @@ test = unsafePartial do
           ]
 
 main :: Effect Unit
-main = Console.log $ printModule test
+main = log $ printModule test

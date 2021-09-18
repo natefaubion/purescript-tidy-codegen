@@ -50,7 +50,7 @@ generateExamplesModule modName src = case parseModule src of
           _ <- importFrom "Data.Tuple" (importCtor "Tuple" "Tuple")
           _ <- importFrom "Data.Maybe" (importCtor "Maybe" "Just")
           typeEffect <- importFrom "Effect" (importType "Effect")
-          exprLog <- importFrom "Effect.Class.Console" (importValue "log")
+          exprLog <- importFrom "Test.Util" (importValue "log")
           exprUnsafePartial <- importFrom "Partial.Unsafe" (importValue "unsafePartial")
           typeModule <- importFrom "PureScript.CST.Types" (importType "Module")
           _ <- importFrom "PureScript.CST.Types" (importTypeAll "Fixity")
