@@ -6,8 +6,8 @@ import Effect (Effect)
 import Partial.Unsafe (unsafePartial)
 import PureScript.CST.Types (Module)
 import Test.Util (log)
-import Tidy.Codegen (binaryOp, binderVar, declSignature, declValue, exprApp, exprCtor, exprIdent, exprInt, exprOp, printModule, typeApp, typeArrow, typeCtor)
-import Tidy.Codegen.Monad (codegenModule, exporting, importCtor, importFrom, importOpen, importType, importValue, write)
+import Tidy.Codegen (binaryOp, binderVar, declSignature, declValue, exprApp, exprCtor, exprIdent, exprInt, exprOp, exprOpName, printModule, typeApp, typeArrow, typeCtor)
+import Tidy.Codegen.Monad (codegenModule, exporting, importCtor, importFrom, importOp, importOpen, importType, importTypeOp, importValue, write)
 
 test :: Module Void
 test = unsafePartial do
@@ -18,6 +18,7 @@ test = unsafePartial do
     maybeFn <- importFrom "Data.Maybe" (importValue "maybe")
     mapTy <- importFrom "Data.Map" (importType "Map")
     mapLookup <- importFrom "Data.Map" (importValue "Map.lookup")
+    altOp <- importFrom "Control.Alt" (importOp "<|>")
     exporting do
       write $ declSignature "getNum" do
         typeArrow
@@ -38,6 +39,16 @@ test = unsafePartial do
               ( exprApp (exprIdent mapLookup)
                   [ exprIdent "key" ]
               )
+          ]
+      write $ declValue "alt'" [ binderVar "a", binderVar "b" ] do
+        exprOp (exprIdent "a")
+          [ binaryOp altOp
+              (exprIdent "b")
+          ]
+      write $ declValue "alt''" [ binderVar "a", binderVar "b" ] do
+        exprApp (exprOpName altOp)
+          [ exprIdent "a"
+          , exprIdent "b"
           ]
 
 main :: Effect Unit

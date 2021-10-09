@@ -278,11 +278,13 @@ instance FromToken (Qualified Operator) where
 instance FromToken SymbolName where
   fromToken = case _ of
     TokSymbolName Nothing str -> Just (SymbolName str)
+    TokOperator Nothing str -> Just (SymbolName str)
     _ -> Nothing
 
 instance FromToken (Qualified SymbolName) where
   fromToken = case _ of
     TokSymbolName qual str -> Just (Qualified qual (SymbolName str))
+    TokOperator qual str -> Just (Qualified qual (SymbolName str))
     _ -> Nothing
 
 instance FromToken ModuleName where
@@ -363,7 +365,29 @@ instance ToQualifiedName SymbolName Operator where
 instance ToQualifiedName (Name a) a where
   toQualifiedName (Name { name, token }) = QualifiedName { module: Nothing, name, token }
 
-instance ToQualifiedName (QualifiedName a) a where
+instance ToQualifiedName (QualifiedName SymbolName) Operator where
+  toQualifiedName (QualifiedName r) = case r.token.value of
+    TokSymbolName qual op ->
+      QualifiedName
+        { module: qual
+        , token: toSourceToken (TokOperator qual op)
+        , name: Operator op
+        }
+    _ ->
+      QualifiedName r { name = coerce r.name }
+
+else instance ToQualifiedName (QualifiedName Operator) SymbolName where
+  toQualifiedName (QualifiedName r) = case r.token.value of
+    TokOperator qual op ->
+      QualifiedName
+        { module: qual
+        , token: toSourceToken (TokSymbolName qual op)
+        , name: SymbolName op
+        }
+    _ ->
+      QualifiedName r { name = coerce r.name }
+
+else instance ToQualifiedName (QualifiedName a) a where
   toQualifiedName = identity
 
 class ToModuleName a where

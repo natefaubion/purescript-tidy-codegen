@@ -1,10 +1,14 @@
-module Test.Monad (getNum) where
+module Test.Monad (alt', alt'', getNum) where
 
 import Prelude
 
+import Control.Alt ((<|>))
 import Data.Map (Map)
 import Data.Map as Map
 import Data.Maybe (Maybe(..), maybe)
 
 getNum :: String -> Map String Int -> Maybe Int
 getNum key = maybe (Just 0) <<< Map.lookup key
+
+alt' a b = a <|> b
+alt'' a b = (<|>) a b

@@ -55,16 +55,16 @@ import Data.Tuple (Tuple(..), fst, snd)
 import Prim.Row as Row
 import Prim.RowList (class RowToList, RowList)
 import Prim.RowList as RowList
-import PureScript.CST.Types (Declaration(..), Export, Foreign(..), Ident, Import, Labeled(..), Module, ModuleName, Name(..), Operator(..), Proper, QualifiedName(..))
+import PureScript.CST.Types (Declaration(..), Export, Foreign(..), Ident, Import, Labeled(..), Module, ModuleName, Name(..), Operator, Proper, QualifiedName(..))
 import Record as Record
 import Record.Builder (Builder)
 import Record.Builder as Builder
 import Safe.Coerce (coerce)
 import Tidy.Codegen (module_)
 import Tidy.Codegen as Codegen
-import Tidy.Codegen.Class (class ToModuleName, class ToName, class ToToken, toModuleName, toToken)
+import Tidy.Codegen.Class (class ToModuleName, class ToName, class ToToken, toModuleName, toQualifiedName, toToken)
 import Tidy.Codegen.Common (toSourceToken)
-import Tidy.Codegen.Types (Qualified(..), SymbolName(..))
+import Tidy.Codegen.Types (Qualified(..), SymbolName)
 import Type.Proxy (Proxy(..))
 
 data CodegenExport
@@ -271,11 +271,11 @@ importValue = withQualifiedName (ImportName <<< CodegenImportValue)
 
 -- | Imports a value operator, yield. Use with `importFrom`.
 importOp :: forall name. ToToken name (Qualified SymbolName) => name -> ImportName Operator
-importOp = withQualifiedName \a b -> ImportName (CodegenImportOp a) (coerce b)
+importOp = withQualifiedName \a b -> ImportName (CodegenImportOp a) (toQualifiedName b)
 
 -- | Imports a type operator. Use with `importFrom`.
 importTypeOp :: forall name. ToToken name (Qualified SymbolName) => name -> ImportName Operator
-importTypeOp = withQualifiedName \a b -> ImportName (CodegenImportTypeOp a) (coerce b)
+importTypeOp = withQualifiedName \a b -> ImportName (CodegenImportTypeOp a) (toQualifiedName b)
 
 -- | Imports a class. Use with `importFrom`.
 importClass :: forall name. ToToken name (Qualified Proper) => name -> ImportName Proper
