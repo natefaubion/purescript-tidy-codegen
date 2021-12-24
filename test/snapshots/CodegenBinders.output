@@ -1,5 +1,7 @@
 module Test.Binders where
 
+lamBinderNegInt = \(-3) -> true
+lamBinderNegNum = \(-3.0) -> true
 lamBinderCtor0 = \Constructor -> true
 lamBinderCtor1 = \(Constructor a) -> true
 lamBinderNamedBinderVar = \x@a -> true
@@ -11,8 +13,8 @@ lamBinderNamedBinderNegInt = \x@(-3) -> true
 lamBinderNamedBinderNegNum = \x@(-3.0) -> true
 lamBinderTyped = \(a :: Type) -> true
 lamBinderOp = \(a /\ b) -> true
-lamBinderNegInt = \(-3) -> true
-lamBinderNegNum = \(-3.0) -> true
+caseBinderNegInt = case _ of -3 -> true
+caseBinderNegNum = case _ of -3.0 -> true
 caseBinderCtor0 = case _ of Constructor -> true
 caseBinderCtor1 = case _ of Constructor a -> true
 caseBinderNamedBinderVar = case _ of x@a -> true
@@ -24,5 +26,3 @@ caseBinderNamedBinderNegInt = case _ of x@(-3) -> true
 caseBinderNamedBinderNegNum = case _ of x@(-3.0) -> true
 caseBinderTyped = case _ of (a :: Type) -> true
 caseBinderOp = case _ of a /\ b -> true
-caseBinderNegInt = case _ of -3 -> true
-caseBinderNegNum = case _ of -3.0 -> true

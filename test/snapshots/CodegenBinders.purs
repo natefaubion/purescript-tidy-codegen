@@ -22,7 +22,11 @@ test = unsafePartial do
     bOp l r = binderOp l [ binaryOp "/\\" r ]
     eBool = exprBool true
   module_ "Test.Binders" [] []
-    [ declValue "lamBinderCtor0" [] do
+    [ declValue "lamBinderNegInt" [] do
+        exprLambda [ bNegInt ] eBool
+    , declValue "lamBinderNegNum" [] do
+        exprLambda [ bNegNum ] eBool
+    , declValue "lamBinderCtor0" [] do
         exprLambda [ bCtor0 ] eBool
     , declValue "lamBinderCtor1" [] do
         exprLambda [ bCtor1 bVarA ] eBool
@@ -44,10 +48,14 @@ test = unsafePartial do
         exprLambda [ bTyped ] eBool
     , declValue "lamBinderOp" [] do
         exprLambda [ bOp bVarA bVarB ] eBool
-    , declValue "lamBinderNegInt" [] do
-        exprLambda [ bNegInt ] eBool
-    , declValue "lamBinderNegNum" [] do
-        exprLambda [ bNegNum ] eBool
+    , declValue "caseBinderNegInt" [] do
+        exprCase [ exprSection ]
+          [ caseBranch [ bNegInt ] eBool
+          ]
+    , declValue "caseBinderNegNum" [] do
+        exprCase [ exprSection ]
+          [ caseBranch [ bNegNum ] eBool
+          ]
     , declValue "caseBinderCtor0" [] do
         exprCase [ exprSection ]
           [ caseBranch [ bCtor0 ] eBool
@@ -91,14 +99,6 @@ test = unsafePartial do
     , declValue "caseBinderOp" [] do
         exprCase [ exprSection ]
           [ caseBranch [ bOp bVarA bVarB ] eBool
-          ]
-    , declValue "caseBinderNegInt" [] do
-        exprCase [ exprSection ]
-          [ caseBranch [ bNegInt ] eBool
-          ]
-    , declValue "caseBinderNegNum" [] do
-        exprCase [ exprSection ]
-          [ caseBranch [ bNegNum ] eBool
           ]
     ]
 
