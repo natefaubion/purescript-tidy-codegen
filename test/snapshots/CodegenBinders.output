@@ -1,0 +1,18 @@
+module Test.Binders where
+
+lamBinderCtor0 = \Constructor -> true
+lamBinderCtor1 = \(Constructor a) -> a
+lamBinderCtor2 = \(Constructor a b) -> a
+lamBinderNamed = \alpha@(a) -> a
+lamBinderTyped = \(a :: Type) -> a
+lamBinderOp = \(a /\ b) -> a
+lamBinderNegInt = \(-3) -> -3
+lamBinderNegNum = \(-3.0) -> -3.0
+caseBinderCtor0 = case _ of Constructor -> true
+caseBinderCtor1 = case _ of Constructor a -> true
+caseBinderCtor2 = case _ of Constructor a b -> true
+caseBinderNamed = case _ of alpha@(a) -> true
+caseBinderTyped = case _ of (a :: Type) -> true
+caseBinderOp = case _ of a /\ b -> true
+caseBinderNegInt = case _ of -3 -> true
+caseBinderNegNum = case _ of -3.0 -> true
