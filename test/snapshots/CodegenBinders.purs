@@ -17,9 +17,6 @@ test = unsafePartial do
     , declValue "lamBinderCtor1" [] do
         exprLambda [ binderCtor "Constructor" [ binderVar "a" ] ]
           (exprIdent "a")
-    , declValue "lamBinderCtor2" [] do
-        exprLambda [ binderCtor "Constructor" [ binderVar "a", binderVar "b" ] ]
-          (exprIdent "a")
     , declValue "lamBinderNamed" [] do
         exprLambda [ binderNamed "alpha" (binderVar "a") ]
           (exprIdent "a")
@@ -45,10 +42,6 @@ test = unsafePartial do
           [ caseBranch [ binderCtor "Constructor" [ binderVar "a" ] ]
               (exprBool true)
           ]
-    , declValue "caseBinderCtor2" [] do
-        exprCase [ exprSection ]
-          [ caseBranch [ binderCtor "Constructor" [ binderVar "a", binderVar "b" ] ]
-              (exprBool true)
           ]
     , declValue "caseBinderNamed" [] do
         exprCase [ exprSection ]
