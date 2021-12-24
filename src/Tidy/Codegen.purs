@@ -649,8 +649,17 @@ exprApp head =
 -- |     )
 -- | ```
 exprLambda :: forall e. Array (Binder e) -> Expr e -> Expr e
-exprLambda bnds body = bnds # NonEmptyArray.fromArray # maybe body \binders ->
-  ExprLambda { symbol: tokBackslash, binders, arrow: tokRightArrow, body }
+exprLambda bnds body = bnds # NonEmptyArray.fromArray # maybe body \bnds' ->
+  ExprLambda { symbol: tokBackslash, binders: addParens bnds', arrow: tokRightArrow, body }
+  where
+  addParens bnds' = bnds' <#> \b -> case b of
+    BinderTyped _ _ _ -> binderParens b
+    BinderOp _ _ -> binderParens b
+    BinderInt (Just _) _ _ -> binderParens b
+    BinderNumber (Just _) _ _ -> binderParens b
+    BinderConstructor _ vars | not $ Array.null vars -> binderParens b
+    _ -> b
+
 
 -- | Constructs an if-then-else expression.
 -- |
@@ -871,8 +880,12 @@ caseBranch
   -> branch
   -> Tuple (Separated (Binder e)) (Guarded e)
 caseBranch lhs rhs =
-  Tuple (toSeparated tokComma (toNonEmptyArray (ErrorPrefix "caseBranch") lhs))
+  Tuple (toSeparated tokComma $ map addParens $ (toNonEmptyArray (ErrorPrefix "caseBranch") lhs))
     (toGuarded tokRightArrow rhs)
+  where
+  addParens b = case b of
+    BinderTyped _ _ _ -> binderParens b
+    _ -> b
 
 -- | Constructs an expression section (`_`). This is meaningless and will
 -- | produce invalid syntax when used arbitrarily. Pair with appropriate
