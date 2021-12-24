@@ -17,8 +17,26 @@ test = unsafePartial do
     , declValue "lamBinderCtor1" [] do
         exprLambda [ binderCtor "Constructor" [ binderVar "a" ] ]
           (exprIdent "a")
-    , declValue "lamBinderNamed" [] do
+    , declValue "lamBinderNamedBinderVar" [] do
         exprLambda [ binderNamed "alpha" (binderVar "a") ]
+          (exprIdent "a")
+    , declValue "lamBinderNamedBinderCtor0" [] do
+        exprLambda [ binderNamed "alpha" (binderCtor "Constructor" []) ]
+          (exprIdent "a")
+    , declValue "lamBinderNamedBinderCtor1" [] do
+        exprLambda [ binderNamed "alpha" (binderCtor "Constructor" [ binderVar "a" ]) ]
+          (exprIdent "a")
+    , declValue "lamBinderNamedBinderOp" [] do
+        exprLambda [ binderNamed "alpha" (binderOp (binderVar "a") [ binaryOp "/\\" $ binderVar "b" ]) ]
+          (exprIdent "a")
+    , declValue "lamBinderNamedBinderTyped" [] do
+        exprLambda [ binderNamed "alpha" (binderTyped (binderVar "a") (typeCtor "Type")) ]
+          (exprIdent "a")
+    , declValue "lamBinderNamedBinderNegInt" [] do
+        exprLambda [ binderNamed "alpha" (binderInt (-3)) ]
+          (exprIdent "a")
+    , declValue "lamBinderNamedBinderNegNum" [] do
+        exprLambda [ binderNamed "alpha" (binderNumber (-3.0)) ]
           (exprIdent "a")
     , declValue "lamBinderTyped" [] do
         exprLambda [ binderTyped (binderVar "a") (typeCtor "Type") ]
@@ -42,10 +60,39 @@ test = unsafePartial do
           [ caseBranch [ binderCtor "Constructor" [ binderVar "a" ] ]
               (exprBool true)
           ]
-          ]
-    , declValue "caseBinderNamed" [] do
+    , declValue "caseBinderNamedBinderVar" [] do
         exprCase [ exprSection ]
           [ caseBranch [ binderNamed "alpha" (binderVar "a") ]
+              (exprBool true)
+          ]
+    , declValue "caseBinderNamedBinderCtor0" [] do
+        exprCase [ exprSection ]
+          [ caseBranch [ binderNamed "alpha" (binderCtor "Constructor" []) ]
+              (exprBool true)
+          ]
+    , declValue "caseBinderNamedBinderCtor1" [] do
+        exprCase [ exprSection ]
+          [ caseBranch [ binderNamed "alpha" (binderCtor "Constructor" [ binderVar "a" ]) ]
+              (exprBool true)
+          ]
+    , declValue "caseBinderNamedBinderOp" [] do
+        exprCase [ exprSection ]
+          [ caseBranch [ binderNamed "alpha" (binderOp (binderVar "a") [ binaryOp "/\\" $ binderVar "b" ]) ]
+              (exprBool true)
+          ]
+    , declValue "caseBinderNamedBinderTyped" [] do
+        exprCase [ exprSection ]
+          [ caseBranch [ binderNamed "alpha" (binderTyped (binderVar "a") (typeCtor "Type")) ]
+              (exprBool true)
+          ]
+    , declValue "caseBinderNamedBinderNegInt" [] do
+        exprCase [ exprSection ]
+          [ caseBranch [ binderNamed "alpha" (binderInt (-3)) ]
+              (exprBool true)
+          ]
+    , declValue "caseBinderNamedBinderNegNum" [] do
+        exprCase [ exprSection ]
+          [ caseBranch [ binderNamed "alpha" (binderNumber (-3.0)) ]
               (exprBool true)
           ]
     , declValue "caseBinderTyped" [] do
