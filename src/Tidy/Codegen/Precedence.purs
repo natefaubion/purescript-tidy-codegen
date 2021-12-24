@@ -162,7 +162,7 @@ precExpr7 a = case a of
   _ -> a
 
 binderParens :: forall e. Binder e -> Binder e
-binderParens = BinderParens <<< toWrapped tokRightParen tokLeftParen
+binderParens = BinderParens <<< toWrapped tokLeftParen tokRightParen
 
 precBinder0 :: forall e. Binder e -> Binder e
 precBinder0 a = case a of

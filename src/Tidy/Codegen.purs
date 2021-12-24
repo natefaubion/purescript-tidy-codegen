@@ -946,7 +946,7 @@ binderRecord arr = BinderRecord $ Wrapped
 
 -- | Wraps a binding pattern in parens.
 binderParens :: forall e. Binder e -> Binder e
-binderParens = BinderParens <<< toWrapped tokRightParen tokLeftParen
+binderParens = BinderParens <<< toWrapped tokLeftParen tokRightParen
 
 -- | Constructs a typed binding pattern.
 binderTyped :: forall e. Binder e -> CST.Type e -> Binder e
