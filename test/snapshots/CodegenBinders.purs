@@ -28,7 +28,7 @@ test = unsafePartial do
         exprLambda [ bNegNum ] eBool
     , declValue "lamBinderCtor0" [] do
         exprLambda [ bCtor0 ] eBool
-    , declValue "lamBinderCtor1" [] do
+    , declValue "lamBinderCtor1BinderVar" [] do
         exprLambda [ bCtor1 bVarA ] eBool
     , declValue "lamBinderNamedBinderVar" [] do
         exprLambda [ bNamed bVarA ] eBool
@@ -60,7 +60,7 @@ test = unsafePartial do
         exprCase [ exprSection ]
           [ caseBranch [ bCtor0 ] eBool
           ]
-    , declValue "caseBinderCtor1" [] do
+    , declValue "caseBinderCtor1BinderVar" [] do
         exprCase [ exprSection ]
           [ caseBranch [ bCtor1 bVarA ] eBool
           ]
