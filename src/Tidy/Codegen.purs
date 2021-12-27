@@ -151,7 +151,7 @@ import Safe.Coerce (coerce)
 import Tidy (ImportWrapOption(..), TypeArrowOption(..), UnicodeOption(..), defaultFormatOptions, formatModule, toDoc)
 import Tidy.Codegen.Class (class OverLeadingComments, class OverTrailingComments, class ToFixityName, class ToGuarded, class ToName, class ToNonEmptyArray, class ToQualifiedName, class ToRecordLabeled, class ToWhere, ErrorPrefix(..), overLeadingComments, overTrailingComments, toFixityName, toGuarded, toName, toNonEmptyArray, toQualifiedName, toRecordLabeled, toToken, toWhere)
 import Tidy.Codegen.Common (toDelimited, toDelimitedNonEmpty, toOneOrDelimited, toParenList, toSeparated, toSourceToken, toWrapped, tokAdo, tokAll, tokAs, tokAt, tokBackslash, tokCase, tokClass, tokComma, tokData, tokDerive, tokDo, tokDot, tokDoubleColon, tokElse, tokEquals, tokFalse, tokForFixity, tokForRole, tokForall, tokForeign, tokHiding, tokIf, tokImport, tokIn, tokInstance, tokLeftArrow, tokLeftBrace, tokLeftFatArrow, tokLeftParen, tokLeftSquare, tokLet, tokModule, tokNegate, tokNewtype, tokOf, tokPipe, tokRightArrow, tokRightBrace, tokRightFatArrow, tokRightParen, tokRightSquare, tokRole, tokSymbolArrow, tokThen, tokTick, tokTrue, tokType, tokUnderscore, tokWhere)
-import Tidy.Codegen.Precedence (precBinder0, precBinder1, precBinder2, precBinder3, precExpr0, precExpr1, precExpr2, precExpr3, precExpr5, precExpr6, precExpr7, precExprApp, precExprAppLast, precExprInfix, precInitLast, precType0, precType1, precType2, precType3)
+import Tidy.Codegen.Precedence (precBinder0, precBinder1, precBinder2, precExpr0, precExpr1, precExpr2, precExpr3, precExpr5, precExpr6, precExpr7, precExprApp, precExprAppLast, precExprInfix, precInitLast, precType0, precType1, precType2, precType3)
 import Tidy.Codegen.String (escapeSourceString)
 import Tidy.Codegen.Types (BinaryOp(..), GuardedBranch(..), SymbolName(..), ClassMember)
 import Tidy.Operators (parseOperatorTable)
@@ -650,7 +650,7 @@ exprApp head =
 -- | ```
 exprLambda :: forall e. Array (Binder e) -> Expr e -> Expr e
 exprLambda bnds body = bnds # NonEmptyArray.fromArray # maybe body \bnds' ->
-  ExprLambda { symbol: tokBackslash, binders: map precBinder3 bnds', arrow: tokRightArrow, body }
+  ExprLambda { symbol: tokBackslash, binders: map precBinder2 bnds', arrow: tokRightArrow, body }
 
 -- | Constructs an if-then-else expression.
 -- |
@@ -896,11 +896,11 @@ binderVar = BinderVar <<< toName
 
 -- | Constructs a named binding pattern (`@`).
 binderNamed :: forall e name. ToName name Ident => name -> Binder e -> Binder e
-binderNamed n = BinderNamed (toName n) tokAt <<< precBinder3
+binderNamed n = BinderNamed (toName n) tokAt <<< precBinder2
 
 -- | Constructs a constructor binding pattern.
 binderCtor :: forall e name. ToQualifiedName name Proper => name -> Array (Binder e) -> Binder e
-binderCtor n = BinderConstructor (toQualifiedName n) <<< map precBinder3
+binderCtor n = BinderConstructor (toQualifiedName n) <<< map precBinder2
 
 -- | Constructs a boolean literal binding pattern.
 binderBool :: forall e. Boolean -> Binder e
