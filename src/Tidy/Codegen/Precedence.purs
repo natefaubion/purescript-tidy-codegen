@@ -184,6 +184,15 @@ precBinder2 a = case a of
   BinderConstructor _ _ -> binderParens a
   _ -> a
 
+precBinder3 :: forall e. Binder e -> Binder e
+precBinder3 a = case a of
+  BinderTyped _ _ _ -> binderParens a
+  BinderOp _ _ -> binderParens a
+  BinderInt (Just _) _ _ -> binderParens a
+  BinderNumber (Just _) _ _ -> binderParens a
+  BinderConstructor _ args | not $ Array.null args -> binderParens a
+  _ -> a
+
 precInitLast :: forall a b. (a -> b) -> (a -> b) -> Array a -> Maybe (NonEmptyArray b)
 precInitLast p1 p2 = Array.unsnoc >>> map \{ init, last } ->
   NonEmptyArray.snoc' (p1 <$> init) (p2 last)
