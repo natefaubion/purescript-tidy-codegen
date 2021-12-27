@@ -880,12 +880,8 @@ caseBranch
   -> branch
   -> Tuple (Separated (Binder e)) (Guarded e)
 caseBranch lhs rhs =
-  Tuple (toSeparated tokComma $ map addParens $ (toNonEmptyArray (ErrorPrefix "caseBranch") lhs))
+  Tuple (toSeparated tokComma $ map precBinder0 $ (toNonEmptyArray (ErrorPrefix "caseBranch") lhs))
     (toGuarded tokRightArrow rhs)
-  where
-  addParens b = case b of
-    BinderTyped _ _ _ -> binderParens b
-    _ -> b
 
 -- | Constructs an expression section (`_`). This is meaningless and will
 -- | produce invalid syntax when used arbitrarily. Pair with appropriate
