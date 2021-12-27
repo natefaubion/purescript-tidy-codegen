@@ -28,8 +28,24 @@ test = unsafePartial do
         exprLambda [ bNegNum ] eBool
     , declValue "lamBinderCtor0" [] do
         exprLambda [ bCtor0 ] eBool
+    , declValue "lamBinderCtor1BinderNegInt" [] do
+        exprLambda [ bCtor1 bNegInt ] eBool
+    , declValue "lamBinderCtor1BinderNegNum" [] do
+        exprLambda [ bCtor1 bNegNum ] eBool
     , declValue "lamBinderCtor1BinderVar" [] do
         exprLambda [ bCtor1 bVarA ] eBool
+    , declValue "lamBinderCtor1BinderNamed" [] do
+        exprLambda [ bCtor1 $ bNamed bVarA ] eBool
+    , declValue "lamBinderCtor1BinderOp" [] do
+        exprLambda [ bCtor1 $ bOp bVarA bVarB ] eBool
+    , declValue "lamBinderCtor1BinderTyped" [] do
+        exprLambda [ bCtor1 bTyped ] eBool
+    , declValue "lamBinderCtor1BinderVar" [] do
+        exprLambda [ bCtor1 bVarA ] eBool
+    , declValue "lamBinderNamedBinderNegInt" [] do
+        exprLambda [ bNamed bNegInt ] eBool
+    , declValue "lamBinderNamedBinderNegNum" [] do
+        exprLambda [ bNamed bNegNum ] eBool
     , declValue "lamBinderNamedBinderVar" [] do
         exprLambda [ bNamed bVarA ] eBool
     , declValue "lamBinderNamedBinderCtor0" [] do
@@ -40,10 +56,6 @@ test = unsafePartial do
         exprLambda [ bNamed $ bOp bVarA bVarB ] eBool
     , declValue "lamBinderNamedBinderTyped" [] do
         exprLambda [ bNamed bTyped ] eBool
-    , declValue "lamBinderNamedBinderNegInt" [] do
-        exprLambda [ bNamed bNegInt ] eBool
-    , declValue "lamBinderNamedBinderNegNum" [] do
-        exprLambda [ bNamed bNegNum ] eBool
     , declValue "lamBinderTyped" [] do
         exprLambda [ bTyped ] eBool
     , declValue "lamBinderOp" [] do
@@ -60,9 +72,37 @@ test = unsafePartial do
         exprCase [ exprSection ]
           [ caseBranch [ bCtor0 ] eBool
           ]
+    , declValue "caseBinderCtor1BinderNegInt" [] do
+        exprCase [ exprSection ]
+          [ caseBranch [ bCtor1 bNegInt ] eBool
+          ]
+    , declValue "caseBinderCtor1BinderNegNum" [] do
+        exprCase [ exprSection ]
+          [ caseBranch [ bCtor1 bNegNum ] eBool
+          ]
     , declValue "caseBinderCtor1BinderVar" [] do
         exprCase [ exprSection ]
           [ caseBranch [ bCtor1 bVarA ] eBool
+          ]
+    , declValue "caseBinderCtor1BinderNamed" [] do
+        exprCase [ exprSection ]
+          [ caseBranch [ bCtor1 $ bNamed bVarA ] eBool
+          ]
+    , declValue "caseBinderCtor1BinderOp" [] do
+        exprCase [ exprSection ]
+          [ caseBranch [ bCtor1 $ bOp bVarA bVarB ] eBool
+          ]
+    , declValue "caseBinderCtor1BinderTyped" [] do
+        exprCase [ exprSection ]
+          [ caseBranch [ bCtor1 bTyped ] eBool
+          ]
+    , declValue "caseBinderNamedBinderNegInt" [] do
+        exprCase [ exprSection ]
+          [ caseBranch [ bNamed bNegInt ] eBool
+          ]
+    , declValue "caseBinderNamedBinderNegNum" [] do
+        exprCase [ exprSection ]
+          [ caseBranch [ bNamed bNegNum ] eBool
           ]
     , declValue "caseBinderNamedBinderVar" [] do
         exprCase [ exprSection ]
@@ -83,14 +123,6 @@ test = unsafePartial do
     , declValue "caseBinderNamedBinderTyped" [] do
         exprCase [ exprSection ]
           [ caseBranch [ bNamed bTyped ] eBool
-          ]
-    , declValue "caseBinderNamedBinderNegInt" [] do
-        exprCase [ exprSection ]
-          [ caseBranch [ bNamed bNegInt ] eBool
-          ]
-    , declValue "caseBinderNamedBinderNegNum" [] do
-        exprCase [ exprSection ]
-          [ caseBranch [ bNamed bNegNum ] eBool
           ]
     , declValue "caseBinderTyped" [] do
         exprCase [ exprSection ]
