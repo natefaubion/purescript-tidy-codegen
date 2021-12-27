@@ -900,7 +900,7 @@ binderNamed n = BinderNamed (toName n) tokAt <<< precBinder3
 
 -- | Constructs a constructor binding pattern.
 binderCtor :: forall e name. ToQualifiedName name Proper => name -> Array (Binder e) -> Binder e
-binderCtor n = BinderConstructor (toQualifiedName n) <<< map precBinder2
+binderCtor n = BinderConstructor (toQualifiedName n) <<< map precBinder3
 
 -- | Constructs a boolean literal binding pattern.
 binderBool :: forall e. Boolean -> Binder e
