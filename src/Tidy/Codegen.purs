@@ -896,7 +896,7 @@ binderVar = BinderVar <<< toName
 
 -- | Constructs a named binding pattern (`@`).
 binderNamed :: forall e name. ToName name Ident => name -> Binder e -> Binder e
-binderNamed n = BinderNamed (toName n) tokAt <<< binderParens
+binderNamed n = BinderNamed (toName n) tokAt <<< precBinder3
 
 -- | Constructs a constructor binding pattern.
 binderCtor :: forall e name. ToQualifiedName name Proper => name -> Array (Binder e) -> Binder e
