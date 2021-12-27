@@ -40,8 +40,6 @@ test = unsafePartial do
         exprLambda [ bCtor1 $ bOp bVarA bVarB ] eBool
     , declValue "lamBinderCtor1BinderTyped" [] do
         exprLambda [ bCtor1 bTyped ] eBool
-    , declValue "lamBinderCtor1BinderVar" [] do
-        exprLambda [ bCtor1 bVarA ] eBool
     , declValue "lamBinderNamedBinderNegInt" [] do
         exprLambda [ bNamed bNegInt ] eBool
     , declValue "lamBinderNamedBinderNegNum" [] do
