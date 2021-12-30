@@ -17,6 +17,7 @@ module Tidy.Codegen.Monad
   , exporting
   , importFrom
   , importOpen
+  , importOpenHiding
   , importValue
   , importOp
   , importType
@@ -91,6 +92,8 @@ derive instance Ord CodegenImport
 type CodegenState e =
   { exports :: Set CodegenExport
   , importsOpen :: Set ModuleName
+  , importsHiding :: Map ModuleName (Set CodegenImport)
+  , importsHidingQualified :: Map ModuleName (Map ModuleName (Set CodegenImport))
   , importsFrom :: Map ModuleName (Set (CodegenImport))
   , importsQualified :: Map ModuleName (Set ModuleName)
   , declarations :: List (Declaration e)
@@ -260,6 +263,69 @@ importOpen :: forall e m mod. Monad m => ToModuleName mod => mod -> CodegenT e m
 importOpen mod = CodegenT $ modify_ \st ->
   st { importsOpen = Set.insert (toModuleName mod) st.importsOpen }
 
+-- | Imports from a particular module, yielding a `QualifiedName` which can be
+-- | used with the `Tidy.Codegen` constructors. If the requested import is
+-- | qualified, an appropriate qualified import will be generated.
+-- |
+-- | ```purescript
+-- | example = do
+-- |   -- Generates a `import Effect.Class.Console as Console` import
+-- |   consoleLog <- importFrom "Effect.Class.Console" (importValue "Console.log")
+-- |   -- Generates a `import Data.Map (Map)` import
+-- |   mapType <- importFrom "Data.Map" (importType "Map")
+-- |   -- Group multiple imports with a record
+-- |   dataMap <- import From "Data.Map"
+-- |     { type: importType "Map"
+-- |     , lookup: importValue "Map.lookup"
+-- |     }
+-- |   ...
+-- | ```
+importOpenHiding
+  :: forall e m mod name imp
+   . Monad m
+  => ToModuleName mod
+  => ToImportFrom name imp
+  => mod
+  -> name
+  -> CodegenT e m imp
+importOpenHiding mod = toImportFrom \(ImportName imp qn@(QualifiedName { module: mbMod })) ->
+  CodegenT $ state \st -> do
+    Tuple qn $ case mbMod of
+      Nothing -> st
+        { importsHiding = Map.alter
+            case imp, _ of
+              CodegenImportType true n, Just is ->
+                Just $ Set.insert imp $ Set.delete (CodegenImportType false n) is
+              CodegenImportType false n, Just is | Set.member (CodegenImportType true n) is ->
+                Just is
+              _, Just is ->
+                Just $ Set.insert imp is
+              _, Nothing ->
+                Just $ Set.singleton imp
+            (toModuleName mod)
+            st.importsHiding
+        }
+      Just qualMod -> st
+        { importsHidingQualified = Map.alter
+            case _ of
+              Nothing -> Just $ Map.singleton qualMod $ Set.singleton imp
+              Just ms -> Just $ Map.alter
+                case imp, _ of
+                  CodegenImportType true n, Just is ->
+                    Just $ Set.insert imp $ Set.delete (CodegenImportType false n) is
+                  CodegenImportType false n, Just is | Set.member (CodegenImportType true n) is ->
+                    Just is
+                  _, Just is ->
+                    Just $ Set.insert imp is
+                  _, Nothing ->
+                    Just $ Set.singleton imp
+                qualMod
+                ms
+
+            (toModuleName mod)
+            st.importsHidingQualified
+        }
+
 withQualifiedName :: forall from to r. ToToken from (Qualified to) => (to -> QualifiedName to -> r) -> from -> r
 withQualifiedName k from = do
   let (Tuple token (Qualified mn name)) = toToken from
@@ -303,6 +369,8 @@ runCodegenT :: forall m e a. CodegenT e m a -> m (Tuple a (CodegenState e))
 runCodegenT (CodegenT m) = runStateT m
   { exports: Set.empty
   , importsOpen: Set.empty
+  , importsHiding: Map.empty
+  , importsHidingQualified: Map.empty
   , importsFrom: Map.empty
   , importsQualified: Map.empty
   , declarations: List.Nil
@@ -318,7 +386,7 @@ codegenModule name = snd <<< runFree coerce <<< runCodegenTModule name
 
 -- | Constructs a CST Module from codegen state.
 moduleFromCodegenState :: forall e name. ToName name ModuleName => name -> CodegenState e -> Module e
-moduleFromCodegenState name st = module_ name exports (importsOpen <> importsNamed) decls
+moduleFromCodegenState name st = module_ name exports (importsOpen <> importsHiding <> importsHidingQualified <> importsNamed) decls
   where
   decls =
     st.declarations
@@ -335,6 +403,15 @@ moduleFromCodegenState name st = module_ name exports (importsOpen <> importsNam
       # Array.fromFoldable
       # map (flip Codegen.declImport [])
       # withLeadingBreaks
+
+  importsHiding = withLeadingBreaks do
+    Tuple mn imps <- Map.toUnfoldable st.importsHiding
+    pure $ Codegen.declImportHiding mn $ codegenImportToCST <$> Set.toUnfoldable imps
+
+  importsHidingQualified = withLeadingBreaks do
+    Tuple mn hiding <- Map.toUnfoldable st.importsHidingQualified
+    Tuple alias imps <- Map.toUnfoldable hiding
+    pure $ Codegen.declImportHidingAs mn (codegenImportToCST <$> Set.toUnfoldable imps) alias
 
   importsFrom = do
     Tuple mn imps <- Map.toUnfoldable st.importsFrom

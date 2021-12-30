@@ -6,7 +6,7 @@ import Effect (Effect)
 import Partial.Unsafe (unsafePartial)
 import PureScript.CST.Types (Module)
 import Test.Util (log)
-import Tidy.Codegen (declImport, declImportAs, importClass, importOp, importTypeAll, importTypeMembers, importTypeOp, importValue, module_, printModule)
+import Tidy.Codegen (declImport, declImportAs, declImportHiding, declImportHidingAs, importClass, importOp, importType, importTypeAll, importTypeMembers, importTypeOp, importValue, module_, printModule)
 
 test :: Module Void
 test = unsafePartial do
@@ -23,6 +23,8 @@ test = unsafePartial do
     , declImport "Type.Row"
         [ importTypeOp "+"
         ]
+    , declImportHiding "Prim" [ importType "Type" ]
+    , declImportHidingAs "Prim" [ importType "Row" ] "P"
     ]
     []
 

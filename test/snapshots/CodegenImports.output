@@ -7,3 +7,5 @@ import Data.Maybe as Maybe
 import Data.Foldable (class Foldable)
 import Data.Either (Either(Left, Right))
 import Type.Row (type (+))
+import Prim hiding (Type)
+import Prim hiding (Row) as P
