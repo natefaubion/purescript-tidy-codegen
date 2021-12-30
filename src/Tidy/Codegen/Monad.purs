@@ -287,8 +287,8 @@ importOpenHiding
   => ToImportFrom name imp
   => mod
   -> name
-  -> CodegenT e m imp
-importOpenHiding mod = toImportFrom \(ImportName imp qn@(QualifiedName { module: mbMod })) ->
+  -> CodegenT e m Unit
+importOpenHiding mod = void <<< toImportFrom \(ImportName imp qn@(QualifiedName { module: mbMod })) ->
   CodegenT $ state \st -> do
     Tuple qn $ case mbMod of
       Nothing -> st
