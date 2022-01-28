@@ -66,6 +66,7 @@ import Tidy.Codegen.Class (class ToModuleName, class ToName, class ToToken, toMo
 import Tidy.Codegen.Common (toSourceToken)
 import Tidy.Codegen.Types (Qualified(..), SymbolName)
 import Type.Proxy (Proxy(..))
+import Effect.Class (class MonadEffect, liftEffect)
 
 data CodegenExport
   = CodegenExportType Boolean Proper
@@ -107,6 +108,9 @@ derive newtype instance MonadTrans (CodegenT e)
 
 instance Monad m => MonadTell (Array (Declaration e)) (CodegenT e m) where
   tell = traverse_ write
+
+instance monadEffectCodegen :: MonadEffect m => MonadEffect (CodegenT e m) where
+  liftEffect = lift <<< liftEffect
 
 type Codegen e = CodegenT e (Free Identity)
 
