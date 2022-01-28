@@ -38,6 +38,7 @@ import Prelude
 
 import Control.Monad.Free (Free, runFree)
 import Control.Monad.State (class MonadTrans, StateT, modify_, runStateT, state)
+import Control.Monad.Trans.Class (lift)
 import Control.Monad.Writer (class MonadTell)
 import Data.Array as Array
 import Data.Either (Either(..), either)
@@ -52,6 +53,7 @@ import Data.Set (Set)
 import Data.Set as Set
 import Data.Symbol (class IsSymbol)
 import Data.Tuple (Tuple(..), fst, snd)
+import Effect.Class (class MonadEffect, liftEffect)
 import Prim.Row as Row
 import Prim.RowList (class RowToList, RowList)
 import Prim.RowList as RowList
@@ -66,7 +68,6 @@ import Tidy.Codegen.Class (class ToModuleName, class ToName, class ToToken, toMo
 import Tidy.Codegen.Common (toSourceToken)
 import Tidy.Codegen.Types (Qualified(..), SymbolName)
 import Type.Proxy (Proxy(..))
-import Effect.Class (class MonadEffect, liftEffect)
 
 data CodegenExport
   = CodegenExportType Boolean Proper
