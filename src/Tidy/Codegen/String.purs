@@ -56,5 +56,6 @@ escapeSourceString = SourceString <<< Array.foldMap escape <<< String.toCodePoin
     , CurrencySymbol
     , ModifierSymbol
     , OtherSymbol
+    , Space
     ]
 
