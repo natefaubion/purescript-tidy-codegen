@@ -649,8 +649,8 @@ exprApp head =
 -- |     )
 -- | ```
 exprLambda :: forall e. Array (Binder e) -> Expr e -> Expr e
-exprLambda bnds body = bnds # NonEmptyArray.fromArray # maybe body \binders ->
-  ExprLambda { symbol: tokBackslash, binders, arrow: tokRightArrow, body }
+exprLambda bnds body = bnds # NonEmptyArray.fromArray # maybe body \bnds' ->
+  ExprLambda { symbol: tokBackslash, binders: map precBinder2 bnds', arrow: tokRightArrow, body }
 
 -- | Constructs an if-then-else expression.
 -- |
@@ -871,7 +871,7 @@ caseBranch
   -> branch
   -> Tuple (Separated (Binder e)) (Guarded e)
 caseBranch lhs rhs =
-  Tuple (toSeparated tokComma (toNonEmptyArray (ErrorPrefix "caseBranch") lhs))
+  Tuple (toSeparated tokComma $ map precBinder0 $ (toNonEmptyArray (ErrorPrefix "caseBranch") lhs))
     (toGuarded tokRightArrow rhs)
 
 -- | Constructs an expression section (`_`). This is meaningless and will
@@ -896,7 +896,7 @@ binderVar = BinderVar <<< toName
 
 -- | Constructs a named binding pattern (`@`).
 binderNamed :: forall e name. ToName name Ident => name -> Binder e -> Binder e
-binderNamed n = BinderNamed (toName n) tokAt
+binderNamed n = BinderNamed (toName n) tokAt <<< precBinder2
 
 -- | Constructs a constructor binding pattern.
 binderCtor :: forall e name. ToQualifiedName name Proper => name -> Array (Binder e) -> Binder e
@@ -946,7 +946,7 @@ binderRecord arr = BinderRecord $ Wrapped
 
 -- | Wraps a binding pattern in parens.
 binderParens :: forall e. Binder e -> Binder e
-binderParens = BinderParens <<< toWrapped tokRightParen tokLeftParen
+binderParens = BinderParens <<< toWrapped tokLeftParen tokRightParen
 
 -- | Constructs a typed binding pattern.
 binderTyped :: forall e. Binder e -> CST.Type e -> Binder e

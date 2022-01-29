@@ -162,7 +162,7 @@ precExpr7 a = case a of
   _ -> a
 
 binderParens :: forall e. Binder e -> Binder e
-binderParens = BinderParens <<< toWrapped tokRightParen tokLeftParen
+binderParens = BinderParens <<< toWrapped tokLeftParen tokRightParen
 
 precBinder0 :: forall e. Binder e -> Binder e
 precBinder0 a = case a of
@@ -181,7 +181,7 @@ precBinder2 a = case a of
   BinderOp _ _ -> binderParens a
   BinderInt (Just _) _ _ -> binderParens a
   BinderNumber (Just _) _ _ -> binderParens a
-  BinderConstructor _ _ -> binderParens a
+  BinderConstructor _ args | not $ Array.null args -> binderParens a
   _ -> a
 
 precInitLast :: forall a b. (a -> b) -> (a -> b) -> Array a -> Maybe (NonEmptyArray b)
