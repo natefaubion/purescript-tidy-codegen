@@ -47,6 +47,7 @@ to generate this file without the comments in this block.
   , "prelude"
   , "record"
   , "safe-coerce"
+  , "st"
   , "strings"
   , "tidy"
   , "transformers"
