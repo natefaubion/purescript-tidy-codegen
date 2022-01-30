@@ -28,7 +28,7 @@ exampleModule = unsafePartial $ codegenModule "Data.Maybe" do
         ]
 
     , declDerive Nothing []
-        (typeApp "Functor" [ typeVar "a" ])
+        (typeApp "Functor" [ typeCtor "Maybe" ])
 
     , declSignature "maybe" do
         typeForall [ typeVar "a", typeVar "b" ] do
