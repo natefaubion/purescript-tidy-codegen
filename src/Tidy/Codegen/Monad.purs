@@ -38,6 +38,7 @@ import Prelude
 
 import Control.Monad.Free (Free, runFree)
 import Control.Monad.State (class MonadTrans, StateT, modify_, runStateT, state)
+import Control.Monad.Trans.Class (lift)
 import Control.Monad.Writer (class MonadTell)
 import Data.Array as Array
 import Data.Either (Either(..), either)
@@ -52,6 +53,7 @@ import Data.Set (Set)
 import Data.Set as Set
 import Data.Symbol (class IsSymbol)
 import Data.Tuple (Tuple(..), fst, snd)
+import Effect.Class (class MonadEffect, liftEffect)
 import Prim.Row as Row
 import Prim.RowList (class RowToList, RowList)
 import Prim.RowList as RowList
@@ -110,6 +112,9 @@ derive newtype instance MonadTrans (CodegenT e)
 
 instance Monad m => MonadTell (Array (Declaration e)) (CodegenT e m) where
   tell = traverse_ write
+
+instance monadEffectCodegen :: MonadEffect m => MonadEffect (CodegenT e m) where
+  liftEffect = lift <<< liftEffect
 
 type Codegen e = CodegenT e (Free Identity)
 
