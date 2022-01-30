@@ -96,6 +96,9 @@ type CodegenState e =
   , declarations :: List (Declaration e)
   }
 
+-- | A Monad transformer which tracks module imports/exports. With this, you
+-- | can define codegen procedures in a modular way without having to manually
+-- | calculate imports or do post-traversals.
 newtype CodegenT e m a = CodegenT (StateT (CodegenState e) m a)
 
 derive newtype instance Functor m => Functor (CodegenT e m)
