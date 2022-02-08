@@ -340,28 +340,28 @@ importFromAlias mod alias = toImportFrom \(ImportName imp (QualifiedName qnRec))
   CodegenT $ state \st -> do
     Tuple qn $ st
       { importsQualified = Map.alter
-            case _ of
-              Nothing -> Just $ Map.singleton qualMod $ Just $ NES.singleton imp
-              Just aliases -> Just $ Map.alter
-                case _ of
-                  Nothing ->
-                    Just $ Just $ NES.singleton imp
-                  is@(Just Nothing) ->
-                    is
-                  is@(Just (Just explicitImports)) ->
-                    case imp of
-                      CodegenImportType true n ->
-                        Just $ Just $ maybe (NES.singleton imp) (NES.insert imp)
-                          $ NES.delete (CodegenImportType false n) explicitImports
-                      CodegenImportType false n | NES.member (CodegenImportType true n) explicitImports ->
-                        is
-                      _ ->
-                        Just $ Just $ NES.insert imp explicitImports
-                qualMod
-                aliases
-            (toModuleName mod)
-            st.importsQualified
-        }
+          case _ of
+            Nothing -> Just $ Map.singleton qualMod $ Just $ NES.singleton imp
+            Just aliases -> Just $ Map.alter
+              case _ of
+                Nothing ->
+                  Just $ Just $ NES.singleton imp
+                is@(Just Nothing) ->
+                  is
+                is@(Just (Just explicitImports)) ->
+                  case imp of
+                    CodegenImportType true n ->
+                      Just $ Just $ maybe (NES.singleton imp) (NES.insert imp)
+                        $ NES.delete (CodegenImportType false n) explicitImports
+                    CodegenImportType false n | NES.member (CodegenImportType true n) explicitImports ->
+                      is
+                    _ ->
+                      Just $ Just $ NES.insert imp explicitImports
+              qualMod
+              aliases
+          (toModuleName mod)
+          st.importsQualified
+      }
 
 -- | Imports a module with an open import.
 -- |
@@ -404,23 +404,23 @@ importOpenHiding
 importOpenHiding mod = void <<< toImportFrom \(ImportName imp qn) ->
   CodegenT $ state \st -> do
     Tuple qn $ st
-        { importsUnqualified = Map.alter
-            case _ of
-              is@(Just (OpenHiding hiddenImports)) ->
-                case imp of
-                  CodegenImportType true n ->
-                    Just $ OpenHiding
-                      $ Set.insert imp
-                      $ Set.delete (CodegenImportType false n) hiddenImports
-                  CodegenImportType false n | Set.member (CodegenImportType true n) hiddenImports ->
-                    is
-                  _ ->
-                    Just $ OpenHiding $ Set.insert imp hiddenImports
-              _ ->
-                Just $ OpenHiding $ Set.singleton imp
-            (toModuleName mod)
-            st.importsUnqualified
-        }
+      { importsUnqualified = Map.alter
+          case _ of
+            is@(Just (OpenHiding hiddenImports)) ->
+              case imp of
+                CodegenImportType true n ->
+                  Just $ OpenHiding
+                    $ Set.insert imp
+                    $ Set.delete (CodegenImportType false n) hiddenImports
+                CodegenImportType false n | Set.member (CodegenImportType true n) hiddenImports ->
+                  is
+                _ ->
+                  Just $ OpenHiding $ Set.insert imp hiddenImports
+            _ ->
+              Just $ OpenHiding $ Set.singleton imp
+          (toModuleName mod)
+          st.importsUnqualified
+      }
 
 withQualifiedName :: forall from to r. ToToken from (Qualified to) => (to -> QualifiedName to -> r) -> from -> r
 withQualifiedName k from = do
@@ -494,17 +494,19 @@ moduleFromCodegenState name st = module_ name exports (importsOpen <> importsNam
   unqualImports =
     st.importsUnqualified
       # Map.toUnfoldable
-      # flip Array.foldl { open: [], closed: [] } (\acc -> case _ of
-        Tuple mn (OpenHiding set) ->
-          acc
-            { open = Array.snoc acc.open $ if Set.isEmpty set then Codegen.declImport mn []
-                else Codegen.declImportHiding mn $ codegenImportToCST <$> Set.toUnfoldable set
-            }
-        Tuple mn (ClosedImporting set) ->
-          acc
-            { closed = Array.snoc acc.closed $ Tuple mn $ Codegen.declImport mn $ codegenImportToCST <$> NES.toUnfoldable set
-            }
-      )
+      # flip Array.foldl { open: [], closed: [] }
+          ( \acc -> case _ of
+              Tuple mn (OpenHiding set) ->
+                acc
+                  { open = Array.snoc acc.open $
+                      if Set.isEmpty set then Codegen.declImport mn []
+                      else Codegen.declImportHiding mn $ codegenImportToCST <$> Set.toUnfoldable set
+                  }
+              Tuple mn (ClosedImporting set) ->
+                acc
+                  { closed = Array.snoc acc.closed $ Tuple mn $ Codegen.declImport mn $ codegenImportToCST <$> NES.toUnfoldable set
+                  }
+          )
 
   importsOpen = withLeadingBreaks unqualImports.open
 
@@ -568,11 +570,11 @@ instance ToImportFrom ImportFromClass (Type e) where
 
 instance ToImportFrom ImportFromTypeOp { binaryOp :: b -> BinaryOp b, typeOpName :: Type e } where
   toImportFrom f (ImportFromTypeOp a) =
-    map (\op -> { binaryOp: binaryOp op, typeOpName: typeOpName op}) (f a)
+    map (\op -> { binaryOp: binaryOp op, typeOpName: typeOpName op }) (f a)
 
 instance ToImportFrom ImportFromOp { binaryOp :: b -> BinaryOp b, exprOpName :: Expr e } where
   toImportFrom f (ImportFromOp a) =
-    map (\op -> { binaryOp: binaryOp op, exprOpName: exprOpName op}) (f a)
+    map (\op -> { binaryOp: binaryOp op, exprOpName: exprOpName op }) (f a)
 
 instance
   ( RowToList rin rl
