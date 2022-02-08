@@ -6,6 +6,12 @@ module Tidy.Codegen.Monad
   , CodegenExport(..)
   , CodegenImport(..)
   , ImportName(..)
+  , ImportFromValue(..)
+  , ImportFromType(..)
+  , ImportFromTypeOp(..)
+  , ImportFromOp(..)
+  , ImportFromClass(..)
+  , ImportFromCtor(..)
   , write
   , writeAndExport
   , exportValue
@@ -37,6 +43,7 @@ module Tidy.Codegen.Monad
   ) where
 
 import Prelude
+import Prim hiding (Type)
 
 import Control.Monad.Free (Free, runFree)
 import Control.Monad.ST.Class (class MonadST, liftST)
@@ -59,19 +66,20 @@ import Data.Set.NonEmpty as NES
 import Data.Symbol (class IsSymbol)
 import Data.Tuple (Tuple(..), fst, snd)
 import Effect.Class (class MonadEffect, liftEffect)
+import Prim as Prim
 import Prim.Row as Row
 import Prim.RowList (class RowToList, RowList)
 import Prim.RowList as RowList
-import PureScript.CST.Types (Declaration(..), Export, Foreign(..), Ident, Import, Labeled(..), Module, ModuleName, Name(..), Operator, Proper, QualifiedName(..))
+import PureScript.CST.Types (Declaration(..), Export, Expr, Foreign(..), Ident, Import, Labeled(..), Module, ModuleName, Name(..), Proper, QualifiedName(..), Type)
 import Record as Record
 import Record.Builder (Builder)
 import Record.Builder as Builder
 import Safe.Coerce (coerce)
-import Tidy.Codegen (module_)
+import Tidy.Codegen (binaryOp, exprCtor, exprIdent, exprOpName, module_, typeCtor, typeOpName)
 import Tidy.Codegen as Codegen
 import Tidy.Codegen.Class (class ToModuleName, class ToName, class ToToken, toModuleName, toQualifiedName, toToken)
 import Tidy.Codegen.Common (toSourceToken)
-import Tidy.Codegen.Types (Qualified(..), SymbolName)
+import Tidy.Codegen.Types (BinaryOp, Qualified(..), SymbolName)
 import Type.Proxy (Proxy(..))
 
 data CodegenExport
@@ -363,28 +371,28 @@ withQualifiedName k from = do
   k name (QualifiedName { module: mn, name, token: toSourceToken token })
 
 -- | Imports a value. Use with `importFrom`.
-importValue :: forall name. ToToken name (Qualified Ident) => name -> ImportName Ident
-importValue = withQualifiedName (ImportName <<< CodegenImportValue)
+importValue :: forall name. ToToken name (Qualified Ident) => name -> ImportFromValue
+importValue = ImportFromValue <<< withQualifiedName (ImportName <<< CodegenImportValue)
 
 -- | Imports a value operator, yield. Use with `importFrom`.
-importOp :: forall name. ToToken name (Qualified SymbolName) => name -> ImportName Operator
-importOp = withQualifiedName \a b -> ImportName (CodegenImportOp a) (toQualifiedName b)
+importOp :: forall name. ToToken name (Qualified SymbolName) => name -> ImportFromOp
+importOp = ImportFromOp <<< withQualifiedName \a b -> ImportName (CodegenImportOp a) (toQualifiedName b)
 
 -- | Imports a type operator. Use with `importFrom`.
-importTypeOp :: forall name. ToToken name (Qualified SymbolName) => name -> ImportName Operator
-importTypeOp = withQualifiedName \a b -> ImportName (CodegenImportTypeOp a) (toQualifiedName b)
+importTypeOp :: forall name. ToToken name (Qualified SymbolName) => name -> ImportFromTypeOp
+importTypeOp = ImportFromTypeOp <<< withQualifiedName \a b -> ImportName (CodegenImportTypeOp a) (toQualifiedName b)
 
 -- | Imports a class. Use with `importFrom`.
-importClass :: forall name. ToToken name (Qualified Proper) => name -> ImportName Proper
-importClass = withQualifiedName (ImportName <<< CodegenImportClass)
+importClass :: forall name. ToToken name (Qualified Proper) => name -> ImportFromClass
+importClass = ImportFromClass <<< withQualifiedName (ImportName <<< CodegenImportClass)
 
 -- | Imports a type. Use with `importFrom`.
-importType :: forall name. ToToken name (Qualified Proper) => name -> ImportName Proper
-importType = withQualifiedName (ImportName <<< CodegenImportType false)
+importType :: forall name. ToToken name (Qualified Proper) => name -> ImportFromType
+importType = ImportFromType <<< withQualifiedName (ImportName <<< CodegenImportType false)
 
 -- | Imports a type. Use with `importFrom`.
-importTypeAll :: forall name. ToToken name (Qualified Proper) => name -> ImportName Proper
-importTypeAll = withQualifiedName (ImportName <<< CodegenImportType true)
+importTypeAll :: forall name. ToToken name (Qualified Proper) => name -> ImportFromCtor
+importTypeAll = ImportFromCtor <<< withQualifiedName (ImportName <<< CodegenImportType true)
 
 -- | Imports a data constructor for a type. Use with `importFrom`.
 -- |
@@ -392,8 +400,8 @@ importTypeAll = withQualifiedName (ImportName <<< CodegenImportType true)
 -- | example = do
 -- |   just <- importFrom "Data.Maybe" (importCtor "Maybe" "Just")
 -- | ```
-importCtor :: forall ty ctor. ToToken ty Proper => ToToken ctor (Qualified Proper) => ty -> ctor -> ImportName Proper
-importCtor = withQualifiedName <<< const <<< ImportName <<< CodegenImportType true <<< snd <<< toToken
+importCtor :: forall ty ctor. ToToken ty Proper => ToToken ctor (Qualified Proper) => ty -> ctor -> ImportFromCtor
+importCtor ty ctor = ImportFromCtor $ withQualifiedName (const $ ImportName $ CodegenImportType true $ snd $ toToken ty) ctor
 
 -- | Extracts codegen state and the produced value.
 runCodegenT :: forall m e a. CodegenT e m a -> m (Tuple a (CodegenState e))
@@ -477,13 +485,37 @@ codegenImportToCST = case _ of
   CodegenImportValue name -> Codegen.importValue name
   CodegenImportOp name -> Codegen.importOp name
 
+newtype ImportFromType = ImportFromType (ImportName Proper)
+newtype ImportFromCtor = ImportFromCtor (ImportName Proper)
+newtype ImportFromTypeOp = ImportFromTypeOp (ImportName SymbolName)
+newtype ImportFromValue = ImportFromValue (ImportName Ident)
+newtype ImportFromOp = ImportFromOp (ImportName SymbolName)
+newtype ImportFromClass = ImportFromClass (ImportName Proper)
+
 type ImportResolver f = forall n. ImportName n -> f (QualifiedName n)
 
 class ToImportFrom name imp | name -> imp where
   toImportFrom :: forall f. Applicative f => ImportResolver f -> name -> f imp
 
-instance ToImportFrom (ImportName name) (QualifiedName name) where
-  toImportFrom = ($)
+instance ToImportFrom ImportFromValue (Expr e) where
+  toImportFrom f (ImportFromValue a) = map exprIdent (f a)
+
+instance ToImportFrom ImportFromType (Type e) where
+  toImportFrom f (ImportFromType a) = map typeCtor (f a)
+
+instance ToImportFrom ImportFromCtor (Expr e) where
+  toImportFrom f (ImportFromCtor a) = map exprCtor (f a)
+
+instance ToImportFrom ImportFromClass (Type e) where
+  toImportFrom f (ImportFromClass a) = map typeCtor (f a)
+
+instance ToImportFrom ImportFromTypeOp { binaryOp :: b -> BinaryOp b, typeOpName :: Type e } where
+  toImportFrom f (ImportFromTypeOp a) =
+    map (\op -> { binaryOp: binaryOp op, typeOpName: typeOpName op}) (f a)
+
+instance ToImportFrom ImportFromOp { binaryOp :: b -> BinaryOp b, exprOpName :: Expr e } where
+  toImportFrom f (ImportFromOp a) =
+    map (\op -> { binaryOp: binaryOp op, exprOpName: exprOpName op}) (f a)
 
 instance
   ( RowToList rin rl
@@ -492,7 +524,7 @@ instance
   ToImportFrom (Record rin) (Record rout) where
   toImportFrom k = map Builder.buildFromScratch <<< toImportFromRecord k (Proxy :: _ rl)
 
-class ToImportFromRecord (rl :: RowList Type) rin rout | rl rin -> rout where
+class ToImportFromRecord (rl :: RowList Prim.Type) rin rout | rl rin -> rout where
   toImportFromRecord :: forall f. Applicative f => ImportResolver f -> Proxy rl -> rin -> f (Builder {} rout)
 
 instance
