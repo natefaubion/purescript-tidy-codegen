@@ -1,5 +1,6 @@
 module Tidy.Codegen.Monad
-  ( CodegenState
+  ( UnqualifiedImportModule(..)
+  , CodegenState
   , CodegenT(..)
   , Codegen
   , CodegenExport(..)
@@ -49,9 +50,11 @@ import Data.List (List)
 import Data.List as List
 import Data.Map (Map)
 import Data.Map as Map
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), maybe)
 import Data.Set (Set)
 import Data.Set as Set
+import Data.Set.NonEmpty (NonEmptySet)
+import Data.Set.NonEmpty as NES
 import Data.Symbol (class IsSymbol)
 import Data.Tuple (Tuple(..), fst, snd)
 import Effect.Class (class MonadEffect, liftEffect)
@@ -91,11 +94,35 @@ data CodegenImport
 derive instance Eq CodegenImport
 derive instance Ord CodegenImport
 
+-- | `import Foo` = `OpenHiding Set.empty`
+-- | `import Foo hiding (bar)` = `OpenHiding (Set.singleton bar)`
+-- | `import Foo (bar)` = `ClosedImporting (NES.singleton bar)`
+-- |
+-- | If a module is imported multiple times unqualified,
+-- | import forms on the left will be overridden by import forms on the right
+-- | ```
+-- | ClosedImport _ < OpenImport Set.empty < OpenImport nonEmptySet
+-- | ```
+data UnqualifiedImportModule
+  = ClosedImporting (NonEmptySet CodegenImport)
+  | OpenHiding (Set CodegenImport)
+
+derive instance eqUnqualifiedImportModule :: Eq UnqualifiedImportModule
+derive instance ordUnqualifiedImportModule :: Ord UnqualifiedImportModule
+
 type CodegenState e =
   { exports :: Set CodegenExport
-  , importsOpen :: Set ModuleName
-  , importsFrom :: Map ModuleName (Set (CodegenImport))
-  , importsQualified :: Map ModuleName (Set ModuleName)
+  , importsUnqualified :: Map ModuleName UnqualifiedImportModule
+  -- | `import Foo as Bar` = `Map.singleton "Foo" $ Map.singleton "Bar" Set.empty`
+  -- | `import Foo (baz) as Bar` = `Map.singleton "Foo" $ Map.singleton "Bar" $ Set.singleton "baz"`
+  -- |
+  -- | If a module is imported multiple times qualified,
+  -- | import forms on the left will be overridden by import forms on the right
+  -- | ```
+  -- | let map1 = Map.singleton
+  -- | (map1 "foo" (map1 "bar" $ Set.singleton "baz")) < (map1 "foo" (map1 "bar" Set.empty))
+  -- | ```
+  , importsQualified :: Map ModuleName (Map ModuleName (Set CodegenImport))
   , declarations :: List (Declaration e)
   }
 
@@ -239,24 +266,33 @@ importFrom mod = toImportFrom \(ImportName imp qn@(QualifiedName { module: mbMod
   CodegenT $ state \st -> do
     Tuple qn $ case mbMod of
       Nothing -> st
-        { importsFrom = Map.alter
-            case imp, _ of
-              CodegenImportType true n, Just is ->
-                Just $ Set.insert imp $ Set.delete (CodegenImportType false n) is
-              CodegenImportType false n, Just is | Set.member (CodegenImportType true n) is ->
-                Just is
-              _, Just is ->
-                Just $ Set.insert imp is
-              _, Nothing ->
-                Just $ Set.singleton imp
+        { importsUnqualified = Map.alter
+            case _ of
+              Nothing ->
+                Just $ ClosedImporting $ NES.singleton imp
+              is@(Just (OpenHiding _)) ->
+                is
+              is@(Just (ClosedImporting closedImports)) ->
+                case imp of
+                  CodegenImportType true n ->
+                    Just $ ClosedImporting
+                      $ maybe (NES.singleton imp) (NES.insert imp)
+                      $ NES.delete (CodegenImportType false n) closedImports
+                  CodegenImportType false n | NES.member (CodegenImportType true n) closedImports ->
+                    is
+                  _ ->
+                    Just $ ClosedImporting $ NES.insert imp closedImports
             (toModuleName mod)
-            st.importsFrom
+            st.importsUnqualified
         }
       Just qualMod -> st
         { importsQualified = Map.alter
             case _ of
-              Nothing -> Just $ Set.singleton qualMod
-              Just ms -> Just $ Set.insert qualMod ms
+              Nothing -> Just $ Map.singleton qualMod (Set.empty)
+              Just aliases -> Just $ Map.alter
+                (const $ Just Set.empty)
+                qualMod
+                aliases
             (toModuleName mod)
             st.importsQualified
         }
@@ -270,7 +306,18 @@ importFrom mod = toImportFrom \(ImportName imp qn@(QualifiedName { module: mbMod
 -- | ```
 importOpen :: forall e m mod. Monad m => ToModuleName mod => mod -> CodegenT e m Unit
 importOpen mod = CodegenT $ modify_ \st ->
-  st { importsOpen = Set.insert (toModuleName mod) st.importsOpen }
+  st
+    { importsUnqualified = Map.alter
+        case _ of
+          Nothing ->
+            Just $ OpenHiding Set.empty
+          Just (ClosedImporting _) ->
+            Just $ OpenHiding Set.empty
+          alreadyOpenAndHidingImports ->
+            alreadyOpenAndHidingImports
+        (toModuleName mod)
+        st.importsUnqualified
+    }
 
 withQualifiedName :: forall from to r. ToToken from (Qualified to) => (to -> QualifiedName to -> r) -> from -> r
 withQualifiedName k from = do
@@ -314,8 +361,7 @@ importCtor = withQualifiedName <<< const <<< ImportName <<< CodegenImportType tr
 runCodegenT :: forall m e a. CodegenT e m a -> m (Tuple a (CodegenState e))
 runCodegenT (CodegenT m) = runStateT m
   { exports: Set.empty
-  , importsOpen: Set.empty
-  , importsFrom: Map.empty
+  , importsUnqualified: Map.empty
   , importsQualified: Map.empty
   , declarations: List.Nil
   }
@@ -342,23 +388,30 @@ moduleFromCodegenState name st = module_ name exports (importsOpen <> importsNam
       # Array.fromFoldable
       # map codegenExportToCST
 
-  importsOpen =
-    st.importsOpen
-      # Array.fromFoldable
-      # map (flip Codegen.declImport [])
-      # withLeadingBreaks
+  unqualImports =
+    st.importsUnqualified
+      # Map.toUnfoldable
+      # flip Array.foldl { open: [], closed: [] } (\acc -> case _ of
+        Tuple mn (OpenHiding set) ->
+          acc
+            { open = Array.snoc acc.open $ if Set.isEmpty set then Codegen.declImport mn []
+                else Codegen.declImportHiding mn $ codegenImportToCST <$> Set.toUnfoldable set
+            }
+        Tuple mn (ClosedImporting set) ->
+          acc
+            { closed = Array.snoc acc.closed $ Tuple mn $ Codegen.declImport mn $ codegenImportToCST <$> NES.toUnfoldable set
+            }
+      )
 
-  importsFrom = do
-    Tuple mn imps <- Map.toUnfoldable st.importsFrom
-    pure $ Tuple mn $ Codegen.declImport mn $ codegenImportToCST <$> Set.toUnfoldable imps
+  importsOpen = withLeadingBreaks unqualImports.open
 
   importsQualified = do
     Tuple mn quals <- Map.toUnfoldable st.importsQualified
-    qual <- Set.toUnfoldable quals
-    pure $ Tuple mn $ Codegen.declImportAs mn [] qual
+    Tuple alias explicitImps <- Map.toUnfoldable quals
+    pure $ Tuple mn $ Codegen.declImportAs mn (codegenImportToCST <$> Set.toUnfoldable explicitImps) alias
 
   importsNamed = withLeadingBreaks do
-    (map (map Left) importsFrom <> map (map Right) importsQualified)
+    (map (map Left) unqualImports.closed <> map (map Right) importsQualified)
       # Array.sortBy (comparing fst)
       # map (either identity identity <<< snd)
 
