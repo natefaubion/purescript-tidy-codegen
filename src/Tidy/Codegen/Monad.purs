@@ -70,7 +70,7 @@ import Prim as Prim
 import Prim.Row as Row
 import Prim.RowList (class RowToList, RowList)
 import Prim.RowList as RowList
-import PureScript.CST.Types (Declaration(..), Export, Expr, Foreign(..), Ident, Import, Labeled(..), Module, ModuleName, Name(..), Proper, QualifiedName(..), Type)
+import PureScript.CST.Types (Declaration(..), Export, Expr, Foreign(..), Ident, Import, Labeled(..), Module, ModuleName, Name(..), Operator, Proper, QualifiedName(..), Type)
 import Record as Record
 import Record.Builder (Builder)
 import Record.Builder as Builder
@@ -487,9 +487,9 @@ codegenImportToCST = case _ of
 
 newtype ImportFromType = ImportFromType (ImportName Proper)
 newtype ImportFromCtor = ImportFromCtor (ImportName Proper)
-newtype ImportFromTypeOp = ImportFromTypeOp (ImportName SymbolName)
+newtype ImportFromTypeOp = ImportFromTypeOp (ImportName Operator)
 newtype ImportFromValue = ImportFromValue (ImportName Ident)
-newtype ImportFromOp = ImportFromOp (ImportName SymbolName)
+newtype ImportFromOp = ImportFromOp (ImportName Operator)
 newtype ImportFromClass = ImportFromClass (ImportName Proper)
 
 type ImportResolver f = forall n. ImportName n -> f (QualifiedName n)
