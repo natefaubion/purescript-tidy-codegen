@@ -59,7 +59,7 @@ import Data.List (List)
 import Data.List as List
 import Data.Map (Map)
 import Data.Map as Map
-import Data.Maybe (Maybe(..), fromMaybe, maybe)
+import Data.Maybe (Maybe(..), maybe)
 import Data.Set (Set)
 import Data.Set as Set
 import Data.Set.NonEmpty (NonEmptySet)
@@ -132,7 +132,7 @@ type CodegenState e =
   -- | let map1 = Map.singleton
   -- | (map1 "foo" (map1 "bar" $ Just _)) < (map1 "foo" (map1 "bar" Nothing))
   -- | ```
-  , importsQualified :: Map ModuleName (Map ModuleName (Maybe (NonEmptySet CodegenImport)))
+  , importsQualified :: Map ModuleName (Map ModuleName (Set CodegenImport))
   , declarations :: List (Declaration e)
   }
 
@@ -298,9 +298,9 @@ importFrom mod = toImportFrom \(ImportName imp qn@(QualifiedName { module: mbMod
       Just qualMod -> st
         { importsQualified = Map.alter
             case _ of
-              Nothing -> Just $ Map.singleton qualMod Nothing
+              Nothing -> Just $ Map.singleton qualMod Set.empty
               Just aliases -> Just $ Map.alter
-                (const $ Just Nothing)
+                (const $ Just Set.empty)
                 qualMod
                 aliases
             (toModuleName mod)
@@ -341,22 +341,22 @@ importFromAlias mod alias = toImportFrom \(ImportName imp (QualifiedName qnRec))
     Tuple qn $ st
       { importsQualified = Map.alter
           case _ of
-            Nothing -> Just $ Map.singleton qualMod $ Just $ NES.singleton imp
+            Nothing -> Just $ Map.singleton qualMod $ Set.singleton imp
             Just aliases -> Just $ Map.alter
               case _ of
                 Nothing ->
-                  Just $ Just $ NES.singleton imp
-                is@(Just Nothing) ->
-                  is
-                is@(Just (Just explicitImports)) ->
-                  case imp of
-                    CodegenImportType true n ->
-                      Just $ Just $ maybe (NES.singleton imp) (NES.insert imp)
-                        $ NES.delete (CodegenImportType false n) explicitImports
-                    CodegenImportType false n | NES.member (CodegenImportType true n) explicitImports ->
-                      is
-                    _ ->
-                      Just $ Just $ NES.insert imp explicitImports
+                  Just $ Set.singleton imp
+                is@(Just explicitImports)
+                  | Set.isEmpty explicitImports -> is
+                  | otherwise ->
+                      case imp of
+                        CodegenImportType true n ->
+                          Just $ Set.insert imp
+                            $ Set.delete (CodegenImportType false n) explicitImports
+                        CodegenImportType false n | Set.member (CodegenImportType true n) explicitImports ->
+                          is
+                        _ ->
+                          Just $ Set.insert imp explicitImports
               qualMod
               aliases
           (toModuleName mod)
@@ -513,7 +513,7 @@ moduleFromCodegenState name st = module_ name exports (importsOpen <> importsNam
   importsQualified = do
     Tuple mn quals <- Map.toUnfoldable st.importsQualified
     Tuple alias explicitImps <- Map.toUnfoldable quals
-    pure $ Tuple mn $ Codegen.declImportAs mn (fromMaybe [] $ map (map codegenImportToCST <<< NES.toUnfoldable) explicitImps) alias
+    pure $ Tuple mn $ Codegen.declImportAs mn (codegenImportToCST <$> Set.toUnfoldable explicitImps) alias
 
   importsNamed = withLeadingBreaks do
     (map (map Left) unqualImports.closed <> map (map Right) importsQualified)
