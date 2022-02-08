@@ -23,6 +23,7 @@ module Tidy.Codegen.Monad
   , exportModule
   , exporting
   , importFrom
+  , importFromAlias
   , importOpen
   , importOpenHiding
   , importValue
@@ -58,7 +59,7 @@ import Data.List (List)
 import Data.List as List
 import Data.Map (Map)
 import Data.Map as Map
-import Data.Maybe (Maybe(..), maybe)
+import Data.Maybe (Maybe(..), fromMaybe, maybe)
 import Data.Set (Set)
 import Data.Set as Set
 import Data.Set.NonEmpty (NonEmptySet)
@@ -122,16 +123,16 @@ derive instance ordUnqualifiedImportModule :: Ord UnqualifiedImportModule
 type CodegenState e =
   { exports :: Set CodegenExport
   , importsUnqualified :: Map ModuleName UnqualifiedImportModule
-  -- | `import Foo as Bar` = `Map.singleton "Foo" $ Map.singleton "Bar" Set.empty`
-  -- | `import Foo (baz) as Bar` = `Map.singleton "Foo" $ Map.singleton "Bar" $ Set.singleton "baz"`
+  -- | `import Foo as Bar` = `Map.singleton "Foo" $ Map.singleton "Bar" Nothing`
+  -- | `import Foo (baz) as Bar` = `Map.singleton "Foo" $ Map.singleton "Bar" $ Just $ NES.singleton "baz"`
   -- |
   -- | If a module is imported multiple times qualified,
   -- | import forms on the left will be overridden by import forms on the right
   -- | ```
   -- | let map1 = Map.singleton
-  -- | (map1 "foo" (map1 "bar" $ Set.singleton "baz")) < (map1 "foo" (map1 "bar" Set.empty))
+  -- | (map1 "foo" (map1 "bar" $ Just _)) < (map1 "foo" (map1 "bar" Nothing))
   -- | ```
-  , importsQualified :: Map ModuleName (Map ModuleName (Set CodegenImport))
+  , importsQualified :: Map ModuleName (Map ModuleName (Maybe (NonEmptySet CodegenImport)))
   , declarations :: List (Declaration e)
   }
 
@@ -297,9 +298,65 @@ importFrom mod = toImportFrom \(ImportName imp qn@(QualifiedName { module: mbMod
       Just qualMod -> st
         { importsQualified = Map.alter
             case _ of
-              Nothing -> Just $ Map.singleton qualMod (Set.empty)
+              Nothing -> Just $ Map.singleton qualMod Nothing
               Just aliases -> Just $ Map.alter
-                (const $ Just Set.empty)
+                (const $ Just Nothing)
+                qualMod
+                aliases
+            (toModuleName mod)
+            st.importsQualified
+        }
+
+-- | Imports from a particular module, guaranteeing that the
+-- | imported members are always referenced via the given qualifier.
+-- |
+-- | ```purescript
+-- | example = do
+-- |   -- Generates a `import Effect.Class.Console (log) as Console` import
+-- |   consoleLog <- importFromAlias "Effect.Class.Console" "Console" $ importValue "log"
+-- |   -- Generates a `import Data.Map (Map) as MyMap` import
+-- |   mapType <- importFromAlias "Data.Map" "MyMap" $ importType "Something.Map"
+-- |   -- Group multiple imports with a record
+-- |   dataMap <- importFromAlias "Data.Map" "Map2"
+-- |     { type: importType "Map"
+-- |     , lookup: importValue "Map.lookup"
+-- |     }
+-- |   ...
+-- | ```
+importFromAlias
+  :: forall e m mod alias name imp
+   . Monad m
+  => ToModuleName mod
+  => ToModuleName alias
+  => ToImportFrom name imp
+  => mod
+  -> alias
+  -> name
+  -> CodegenT e m imp
+importFromAlias mod alias = toImportFrom \(ImportName imp (QualifiedName qnRec)) -> do
+  let
+    qualMod = toModuleName alias
+    qn = QualifiedName $ qnRec { module = Just qualMod }
+  CodegenT $ state \st -> do
+    Tuple qn $ st
+      { importsQualified = Map.alter
+            case _ of
+              Nothing -> Just $ Map.singleton qualMod $ Just $ NES.singleton imp
+              Just aliases -> Just $ Map.alter
+                case _ of
+                  Nothing ->
+                    Just $ Just $ NES.singleton imp
+                  is@(Just Nothing) ->
+                    is
+                  is@(Just (Just explicitImports)) ->
+                    case imp of
+                      CodegenImportType true n ->
+                        Just $ Just $ maybe (NES.singleton imp) (NES.insert imp)
+                          $ NES.delete (CodegenImportType false n) explicitImports
+                      CodegenImportType false n | NES.member (CodegenImportType true n) explicitImports ->
+                        is
+                      _ ->
+                        Just $ Just $ NES.insert imp explicitImports
                 qualMod
                 aliases
             (toModuleName mod)
@@ -454,7 +511,7 @@ moduleFromCodegenState name st = module_ name exports (importsOpen <> importsNam
   importsQualified = do
     Tuple mn quals <- Map.toUnfoldable st.importsQualified
     Tuple alias explicitImps <- Map.toUnfoldable quals
-    pure $ Tuple mn $ Codegen.declImportAs mn (codegenImportToCST <$> Set.toUnfoldable explicitImps) alias
+    pure $ Tuple mn $ Codegen.declImportAs mn (fromMaybe [] $ map (map codegenImportToCST <<< NES.toUnfoldable) explicitImps) alias
 
   importsNamed = withLeadingBreaks do
     (map (map Left) unqualImports.closed <> map (map Right) importsQualified)
