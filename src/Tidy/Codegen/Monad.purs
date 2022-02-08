@@ -6,12 +6,12 @@ module Tidy.Codegen.Monad
   , CodegenExport(..)
   , CodegenImport(..)
   , ImportName(..)
-  , ImportFromValue(..)
-  , ImportFromType(..)
-  , ImportFromTypeOp(..)
-  , ImportFromOp(..)
-  , ImportFromClass(..)
-  , ImportFromCtor(..)
+  , ImportFromValue
+  , ImportFromType
+  , ImportFromTypeOp
+  , ImportFromOp
+  , ImportFromClass
+  , ImportFromCtor
   , write
   , writeAndExport
   , exportValue
