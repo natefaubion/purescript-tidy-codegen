@@ -320,7 +320,7 @@ importOpen mod = CodegenT $ modify_ \st ->
         st.importsUnqualified
     }
 
--- | Imports a module with as an open import with imported members hidden.
+-- | Imports a module as an open import with imported members hidden.
 -- |
 -- | ```purescript
 -- | example = do
