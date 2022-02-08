@@ -18,6 +18,7 @@ module Tidy.Codegen.Monad
   , exporting
   , importFrom
   , importOpen
+  , importOpenHiding
   , importValue
   , importOp
   , importType
@@ -318,6 +319,43 @@ importOpen mod = CodegenT $ modify_ \st ->
         (toModuleName mod)
         st.importsUnqualified
     }
+
+-- | Imports a module with as an open import with imported members hidden.
+-- |
+-- | ```purescript
+-- | example = do
+-- |   importOpenHiding "Prim"
+-- |     { someType: importType "Type" }
+-- |   ...
+-- | ```
+importOpenHiding
+  :: forall e m mod name imp
+   . Monad m
+  => ToModuleName mod
+  => ToImportFrom name imp
+  => mod
+  -> name
+  -> CodegenT e m Unit
+importOpenHiding mod = void <<< toImportFrom \(ImportName imp qn) ->
+  CodegenT $ state \st -> do
+    Tuple qn $ st
+        { importsUnqualified = Map.alter
+            case _ of
+              is@(Just (OpenHiding hiddenImports)) ->
+                case imp of
+                  CodegenImportType true n ->
+                    Just $ OpenHiding
+                      $ Set.insert imp
+                      $ Set.delete (CodegenImportType false n) hiddenImports
+                  CodegenImportType false n | Set.member (CodegenImportType true n) hiddenImports ->
+                    is
+                  _ ->
+                    Just $ OpenHiding $ Set.insert imp hiddenImports
+              _ ->
+                Just $ OpenHiding $ Set.singleton imp
+            (toModuleName mod)
+            st.importsUnqualified
+        }
 
 withQualifiedName :: forall from to r. ToToken from (Qualified to) => (to -> QualifiedName to -> r) -> from -> r
 withQualifiedName k from = do
