@@ -72,23 +72,23 @@ generateExamplesModule modName src = case parseModule src of
                 pure expr
               ExampleType -> do
                 exprDeclType <- importFrom "Tidy.Codegen" (importValue "declType")
-                pure $ exprApp (exprIdent exprDeclType)
+                pure $ exprApp exprDeclType
                   [ exprString (String.toUpper (String.take 1 ident) <> String.drop 1 ident <> "Example")
                   , exprArray []
                   , expr
                   ]
               ExampleExpr -> do
                 exprDeclValue <- importFrom "Tidy.Codegen" (importValue "declValue")
-                pure $ exprApp (exprIdent exprDeclValue)
+                pure $ exprApp exprDeclValue
                   [ exprString (ident <> "Example")
                   , exprArray []
                   , expr
                   ]
 
-          write $ declSignature "test" (typeApp (typeCtor typeModule) [ typeCtor "Void" ])
+          write $ declSignature "test" (typeApp typeModule [ typeCtor "Void" ])
           write $ declValue "test" [] do
-            exprApp (exprIdent exprUnsafePartial)
-              [ exprApp (exprIdent exprModule)
+            exprApp exprUnsafePartial
+              [ exprApp exprModule
                   [ exprString (unwrap modName)
                   , exprArray []
                   , exprArray []
@@ -96,10 +96,10 @@ generateExamplesModule modName src = case parseModule src of
                   ]
               ]
 
-          write $ declSignature "main" (typeApp (typeCtor typeEffect) [ typeCtor "Unit" ])
+          write $ declSignature "main" (typeApp typeEffect [ typeCtor "Unit" ])
           write $ declValue "main" [] do
-            exprApp (exprIdent exprLog)
-              [ exprApp (exprIdent exprPrintModule)
+            exprApp exprLog
+              [ exprApp exprPrintModule
                   [ exprIdent "test"
                   ]
               ]

@@ -6,8 +6,8 @@ import Effect (Effect)
 import Partial.Unsafe (unsafePartial)
 import PureScript.CST.Types (Module)
 import Test.Util (log)
-import Tidy.Codegen (binaryOp, binderVar, declSignature, declValue, exprApp, exprCtor, exprIdent, exprInt, exprOp, exprOpName, printModule, typeApp, typeArrow, typeCtor)
-import Tidy.Codegen.Monad (codegenModule, exporting, importCtor, importFrom, importOp, importOpen, importType, importTypeOp, importValue, write)
+import Tidy.Codegen (binaryOp, binderVar, declSignature, declValue, exprApp, exprIdent, exprInt, exprOp, printModule, typeApp, typeArrow, typeCtor)
+import Tidy.Codegen.Monad (codegenModule, exporting, importCtor, importFrom, importOp, importOpen, importType, importValue, write)
 
 test :: Module Void
 test = unsafePartial do
@@ -23,30 +23,30 @@ test = unsafePartial do
       write $ declSignature "getNum" do
         typeArrow
           [ typeCtor "String"
-          , typeApp (typeCtor mapTy) [ typeCtor "String", typeCtor "Int" ]
+          , typeApp mapTy [ typeCtor "String", typeCtor "Int" ]
           ]
-          ( typeApp (typeCtor maybeTy)
+          ( typeApp maybeTy
               [ typeCtor "Int" ]
           )
       write $ declValue "getNum" [ binderVar "key" ] do
         exprOp
-          ( exprApp (exprIdent maybeFn)
-              [ exprApp (exprCtor justCtor)
+          ( exprApp maybeFn
+              [ exprApp justCtor
                   [ exprInt 0 ]
               ]
           )
           [ binaryOp "<<<"
-              ( exprApp (exprIdent mapLookup)
+              ( exprApp mapLookup
                   [ exprIdent "key" ]
               )
           ]
       write $ declValue "alt'" [ binderVar "a", binderVar "b" ] do
         exprOp (exprIdent "a")
-          [ binaryOp altOp
+          [ altOp.binaryOp
               (exprIdent "b")
           ]
       write $ declValue "alt''" [ binderVar "a", binderVar "b" ] do
-        exprApp (exprOpName altOp)
+        exprApp altOp.exprOpName
           [ exprIdent "a"
           , exprIdent "b"
           ]
