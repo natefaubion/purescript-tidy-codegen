@@ -130,7 +130,7 @@ type CodegenState e =
   -- | import forms on the left will be overridden by import forms on the right
   -- | ```
   -- | let map1 = Map.singleton
-  -- | (map1 "foo" (map1 "bar" $ Just _)) < (map1 "foo" (map1 "bar" Nothing))
+  -- | (map1 "foo" (map1 "bar" $ Set.singleton "baz")) < (map1 "foo" (map1 "bar" Set.empty))
   -- | ```
   , importsQualified :: Map ModuleName (Map ModuleName (Set CodegenImport))
   , declarations :: List (Declaration e)
