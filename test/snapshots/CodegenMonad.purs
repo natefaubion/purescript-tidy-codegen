@@ -6,8 +6,8 @@ import Effect (Effect)
 import Partial.Unsafe (unsafePartial)
 import PureScript.CST.Types (Module)
 import Test.Util (log)
-import Tidy.Codegen (binaryOp, binderVar, declSignature, declValue, exprApp, exprCtor, exprHole, exprIdent, exprInt, exprOp, exprOpName, printModule, typeApp, typeArrow, typeCtor, typeHole)
-import Tidy.Codegen.Monad (codegenModule, exporting, importCtor, importFrom, importOp, importOpen, importType, importTypeOp, importValue, write)
+import Tidy.Codegen (binaryOp, binderVar, declSignature, declValue, exprApp, exprCtor, exprIdent, exprInt, exprOp, exprOpName, printModule, typeApp, typeArrow, typeCtor)
+import Tidy.Codegen.Monad (codegenModule, exporting, importCtor, importFrom, importOp, importOpen, importType, importValue, write)
 
 test :: Module Void
 test = unsafePartial do
