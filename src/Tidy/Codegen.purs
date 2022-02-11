@@ -68,6 +68,7 @@ module Tidy.Codegen
   , exprCtor
   , exprDo
   , exprDot
+  , exprHole
   , exprIdent
   , exprIf
   , exprInfix
@@ -113,6 +114,7 @@ module Tidy.Codegen
   , typeConstrained
   , typeCtor
   , typeForall
+  , typeHole
   , typeKinded
   , typeOp
   , typeOpName
@@ -145,7 +147,7 @@ import Data.String.CodeUnits as SCU
 import Data.Tuple (Tuple(..), curry)
 import Dodo (plainText)
 import Dodo as Dodo
-import PureScript.CST.Types (Binder(..), ClassFundep, Comment(..), DataCtor(..), DataMembers(..), Declaration(..), DoStatement(..), Export(..), Expr(..), Fixity, FixityOp(..), Foreign(..), Guarded, Ident, Import(..), ImportDecl(..), Instance(..), InstanceBinding(..), InstanceHead, IntValue(..), Label, Labeled(..), LetBinding(..), LineFeed(..), Module(..), ModuleBody(..), ModuleHeader(..), ModuleName, Name, Operator(..), PatternGuard(..), Proper, QualifiedName(..), RecordUpdate(..), Role, Separated(..), SourceToken, Token(..), Type(..), TypeVarBinding(..), Where(..), Wrapped(..))
+import PureScript.CST.Types (Binder(..), ClassFundep, Comment(..), DataCtor(..), DataMembers(..), Declaration(..), DoStatement(..), Export(..), Expr(..), Fixity, FixityOp(..), Foreign(..), Guarded, Ident, Import(..), ImportDecl(..), Instance(..), InstanceBinding(..), InstanceHead, IntValue(..), Label, Labeled(..), LetBinding(..), LineFeed(..), Module(..), ModuleBody(..), ModuleHeader(..), ModuleName, Name(..), Operator(..), PatternGuard(..), Proper, QualifiedName(..), RecordUpdate(..), Role, Separated(..), SourceToken, Token(..), Type(..), TypeVarBinding(..), Where(..), Wrapped(..))
 import PureScript.CST.Types as CST
 import Safe.Coerce (coerce)
 import Tidy (ImportWrapOption(..), TypeArrowOption(..), UnicodeOption(..), defaultFormatOptions, formatModule, toDoc)
@@ -350,6 +352,14 @@ typeKinded a b = TypeKinded (precType0 a) tokDoubleColon b
 typeApp :: forall e. CST.Type e -> Array (CST.Type e) -> CST.Type e
 typeApp ty = maybe ty (TypeApp (precType3 ty)) <<< NonEmptyArray.fromArray <<< map precType3
 
+-- | Overloaded constructor for a type hole.
+-- |
+-- | ```purescript
+-- | exampleType = typeHole "helpMePls"
+-- | ```
+typeHole :: forall e name. ToName name Ident => name -> CST.Type e
+typeHole = TypeHole <<< toName
+
 -- | Constructs binary operator applications. These may be grouped by the
 -- | pretty-printer based on precedence.
 -- |
@@ -443,6 +453,18 @@ typeParens = case _ of
 -- | ```
 exprIdent :: forall e name. ToQualifiedName name Ident => name -> Expr e
 exprIdent = ExprIdent <<< toQualifiedName
+
+-- | An overloaded constructor for a hole
+-- |
+-- | ```purescript
+-- | exampleExpr =
+-- |   exprApp (exprCtor "List.Cons")
+-- |     [ exprHole "helpMePls"
+-- |     , exprCtor "List.Nil"
+-- |     ]
+-- | ```
+exprHole :: forall e name. ToName name Ident => name -> Expr e
+exprHole = ExprHole <<< toName
 
 -- | An overloaded constructor for a value constructor, which may be qualified.
 -- |

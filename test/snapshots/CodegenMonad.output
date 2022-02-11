@@ -1,4 +1,4 @@
-module Test.Monad (alt', alt'', getNum) where
+module Test.Monad (alt', alt'', getNum, holy) where
 
 import Prelude
 
@@ -12,3 +12,6 @@ getNum key = maybe (Just 0) <<< Map.lookup key
 
 alt' a b = a <|> b
 alt'' a b = (<|>) a b
+
+holy :: ?someHole
+holy = ?someHole

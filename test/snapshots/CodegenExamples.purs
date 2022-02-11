@@ -12,7 +12,7 @@ import Effect (Effect)
 import Partial.Unsafe (unsafePartial)
 import PureScript.CST.Types (Module, Fixity(..))
 import Test.Util (log)
-import Tidy.Codegen (binaryOp, binderCtor, binderRecord, binderVar, binderWildcard, caseBranch, classMember, dataCtor, declClass, declData, declDerive, declDeriveNewtype, declInfix, declInstance, declInstanceChain, declNewtype, declType, declValue, doBind, doDiscard, doLet, exprApp, exprArray, exprBool, exprCase, exprChar, exprCtor, exprDo, exprDot, exprIdent, exprIf, exprInfix, exprInt, exprIntHex, exprLambda, exprLet, exprNumber, exprOp, exprOpName, exprRecord, exprString, exprTyped, exprUpdate, exprWhere, guardBranch, guardExpr, letBinder, letSignature, letValue, module_, printModule, typeApp, typeArrow, typeConstrained, typeCtor, typeForall, typeKinded, typeOp, typeOpName, typeRecord, typeRow, typeVar, update, updateNested)
+import Tidy.Codegen (binaryOp, binderCtor, binderRecord, binderVar, binderWildcard, caseBranch, classMember, dataCtor, declClass, declData, declDerive, declDeriveNewtype, declInfix, declInstance, declInstanceChain, declNewtype, declType, declValue, doBind, doDiscard, doLet, exprApp, exprArray, exprBool, exprCase, exprChar, exprCtor, exprDo, exprDot, exprHole, exprIdent, exprIf, exprInfix, exprInt, exprIntHex, exprLambda, exprLet, exprNumber, exprOp, exprOpName, exprRecord, exprString, exprTyped, exprUpdate, exprWhere, guardBranch, guardExpr, letBinder, letSignature, letValue, module_, printModule, typeApp, typeArrow, typeConstrained, typeCtor, typeForall, typeHole, typeKinded, typeOp, typeOpName, typeRecord, typeRow, typeVar, update, updateNested)
 
 test :: Module Void
 test = unsafePartial
@@ -50,6 +50,7 @@ test = unsafePartial
               , typeCtor "User"
               ]
           )
+      , declType "TypeHoleExample" [] (typeHole "helpMePls")
       , declType "TypeOpExample" []
           ( typeOp (typeCtor "String")
               [ binaryOp "/\\" (typeCtor "Int")
@@ -89,6 +90,12 @@ test = unsafePartial
           ( exprApp (exprIdent "Map.lookup")
               [ exprIdent "userId"
               , exprIdent "users"
+              ]
+          )
+      , declValue "exprHoleExample" []
+          ( exprApp (exprCtor "List.Cons")
+              [ exprHole "helpMePls"
+              , exprCtor "List.Nil"
               ]
           )
       , declValue "exprCtorExample" []
