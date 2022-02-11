@@ -1,4 +1,4 @@
-module Test.Monad (alt', alt'', getNum, holy) where
+module Test.Monad (alt', alt'', getNum) where
 
 import Prelude
 
