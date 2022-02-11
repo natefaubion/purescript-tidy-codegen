@@ -13,5 +13,5 @@ getNum key = maybe (Just 0) <<< Map.lookup key
 alt' a b = a <|> b
 alt'' a b = (<|>) a b
 
-holy :: ?someHole
+holy :: ?SomeHole
 holy = ?someHole

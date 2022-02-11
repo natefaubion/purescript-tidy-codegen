@@ -50,8 +50,8 @@ test = unsafePartial do
           [ exprIdent "a"
           , exprIdent "b"
           ]
-      write $ declSignature "holy" $ typeHole "someHole"
-      write $ declValue "holy" [] $ exprHole "someHole"
+      write $ declSignature "holy" $ typeHole "?SomeHole"
+      write $ declValue "holy" [] $ exprHole "?someHole"
 
 main :: Effect Unit
 main = log $ printModule test

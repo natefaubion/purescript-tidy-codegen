@@ -50,7 +50,7 @@ test = unsafePartial
               , typeCtor "User"
               ]
           )
-      , declType "TypeHoleExample" [] (typeHole "helpMePls")
+      , declType "TypeHoleExample" [] (typeHole "?HelpMePls")
       , declType "TypeOpExample" []
           ( typeOp (typeCtor "String")
               [ binaryOp "/\\" (typeCtor "Int")
@@ -94,7 +94,7 @@ test = unsafePartial
           )
       , declValue "exprHoleExample" []
           ( exprApp (exprCtor "List.Cons")
-              [ exprHole "helpMePls"
+              [ exprHole "?helpMePls"
               , exprCtor "List.Nil"
               ]
           )

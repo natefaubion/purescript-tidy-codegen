@@ -155,7 +155,7 @@ import Tidy.Codegen.Class (class OverLeadingComments, class OverTrailingComments
 import Tidy.Codegen.Common (toDelimited, toDelimitedNonEmpty, toOneOrDelimited, toParenList, toSeparated, toSourceToken, toWrapped, tokAdo, tokAll, tokAs, tokAt, tokBackslash, tokCase, tokClass, tokComma, tokData, tokDerive, tokDo, tokDot, tokDoubleColon, tokElse, tokEquals, tokFalse, tokForFixity, tokForRole, tokForall, tokForeign, tokHiding, tokIf, tokImport, tokIn, tokInstance, tokLeftArrow, tokLeftBrace, tokLeftFatArrow, tokLeftParen, tokLeftSquare, tokLet, tokModule, tokNegate, tokNewtype, tokOf, tokPipe, tokRightArrow, tokRightBrace, tokRightFatArrow, tokRightParen, tokRightSquare, tokRole, tokSymbolArrow, tokThen, tokTick, tokTrue, tokType, tokUnderscore, tokWhere)
 import Tidy.Codegen.Precedence (precBinder0, precBinder1, precBinder2, precExpr0, precExpr1, precExpr2, precExpr3, precExpr5, precExpr6, precExpr7, precExprApp, precExprAppLast, precExprInfix, precInitLast, precType0, precType1, precType2, precType3)
 import Tidy.Codegen.String (escapeSourceString)
-import Tidy.Codegen.Types (BinaryOp(..), GuardedBranch(..), SymbolName(..), ClassMember)
+import Tidy.Codegen.Types (BinaryOp(..), ClassMember, GuardedBranch(..), HoleName(..), SymbolName(..))
 import Tidy.Operators (parseOperatorTable)
 import Tidy.Operators.Defaults (defaultOperators)
 import Tidy.Precedence (PrecedenceMap)
@@ -355,10 +355,10 @@ typeApp ty = maybe ty (TypeApp (precType3 ty)) <<< NonEmptyArray.fromArray <<< m
 -- | Overloaded constructor for a type hole.
 -- |
 -- | ```purescript
--- | exampleType = typeHole "helpMePls"
+-- | exampleType = typeHole "?HelpMePls"
 -- | ```
-typeHole :: forall e name. ToName name Ident => name -> CST.Type e
-typeHole = TypeHole <<< toName
+typeHole :: forall e name. ToName name HoleName => name -> CST.Type e
+typeHole = TypeHole <<< (coerce :: Name HoleName -> Name Ident) <<< toName
 
 -- | Constructs binary operator applications. These may be grouped by the
 -- | pretty-printer based on precedence.
@@ -459,12 +459,12 @@ exprIdent = ExprIdent <<< toQualifiedName
 -- | ```purescript
 -- | exampleExpr =
 -- |   exprApp (exprCtor "List.Cons")
--- |     [ exprHole "helpMePls"
+-- |     [ exprHole "?helpMePls"
 -- |     , exprCtor "List.Nil"
 -- |     ]
 -- | ```
-exprHole :: forall e name. ToName name Ident => name -> Expr e
-exprHole = ExprHole <<< toName
+exprHole :: forall e name. ToName name HoleName => name -> Expr e
+exprHole = ExprHole <<< (coerce :: Name HoleName -> Name Ident) <<< toName
 
 -- | An overloaded constructor for a value constructor, which may be qualified.
 -- |
