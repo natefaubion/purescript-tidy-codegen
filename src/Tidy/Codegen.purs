@@ -454,7 +454,7 @@ typeParens = case _ of
 exprIdent :: forall e name. ToQualifiedName name Ident => name -> Expr e
 exprIdent = ExprIdent <<< toQualifiedName
 
--- | An overloaded constructor for a hole
+-- | An overloaded constructor for a hole.
 -- |
 -- | ```purescript
 -- | exampleExpr =
