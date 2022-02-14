@@ -105,7 +105,7 @@ derive instance Eq CodegenImport
 derive instance Ord CodegenImport
 
 data UnqualifiedImportModule
-  = ClosedImporting (NonEmptySet CodegenImport)
+  = Closed (NonEmptySet CodegenImport)
   | Open
   | OpenHiding (NonEmptySet CodegenImport)
 
@@ -271,17 +271,17 @@ importFrom mod = toImportFrom \(ImportName imp qn@(QualifiedName { module: mbMod
         { importsUnqualified = Map.alter
             case _ of
               Nothing ->
-                Just $ ClosedImporting $ NES.singleton imp
-              is@(Just (ClosedImporting closedImports)) ->
+                Just $ Closed $ NES.singleton imp
+              is@(Just (Closed closedImports)) ->
                 case imp of
                   CodegenImportType true n ->
-                    Just $ ClosedImporting
+                    Just $ Closed
                       $ maybe (NES.singleton imp) (NES.insert imp)
                       $ NES.delete (CodegenImportType false n) closedImports
                   CodegenImportType false n | NES.member (CodegenImportType true n) closedImports ->
                     is
                   _ ->
-                    Just $ ClosedImporting $ NES.insert imp closedImports
+                    Just $ Closed $ NES.insert imp closedImports
               openOrOpenHiding ->
                 openOrOpenHiding
             (toModuleName mod)
@@ -369,7 +369,7 @@ importOpen mod = CodegenT $ modify_ \st ->
         case _ of
           Nothing ->
             Just $ Open
-          Just (ClosedImporting _) ->
+          Just (Closed _) ->
             Just $ Open
           openOrOpenHidingImports ->
             openOrOpenHidingImports
@@ -498,7 +498,7 @@ moduleFromCodegenState name st = module_ name exports (importsOpen <> importsNam
                 acc
                   { open = Array.snoc acc.open $ Codegen.declImport mn []
                   }
-              Tuple mn (ClosedImporting set) ->
+              Tuple mn (Closed set) ->
                 acc
                   { closed = Array.snoc acc.closed $ Tuple mn $ Codegen.declImport mn $ codegenImportToCST <$> NES.toUnfoldable set
                   }
