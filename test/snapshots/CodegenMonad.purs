@@ -6,13 +6,32 @@ import Effect (Effect)
 import Partial.Unsafe (unsafePartial)
 import PureScript.CST.Types (Module)
 import Test.Util (log)
-import Tidy.Codegen (binaryOp, binderVar, declSignature, declValue, exprApp, exprCtor, exprIdent, exprInt, exprOp, exprOpName, printModule, typeApp, typeArrow, typeCtor)
-import Tidy.Codegen.Monad (codegenModule, exporting, importCtor, importFrom, importOp, importOpen, importType, importTypeOp, importValue, write)
+import Tidy.Codegen (binaryOp, binderVar, declSignature, declValue, exprApp, exprIdent, exprInt, exprOp, printModule, typeApp, typeArrow, typeCtor)
+import Tidy.Codegen.Monad (codegenModule, exporting, importCtor, importFrom, importFromAlias, importOp, importOpen, importOpenHiding, importType, importValue, write)
 
 test :: Module Void
 test = unsafePartial do
   codegenModule "Test.Monad" do
     importOpen "Prelude"
+
+    -- Duplicate module import will defer to hidden version
+    importOpen "Prim"
+    importOpenHiding "Prim" $ importType "Type"
+
+    -- Duplicate module import will defer to open version
+    void $ importFrom "Prim.Boolean" $ importType "True"
+    importOpen "Prim.Boolean"
+
+    -- Explicit alias will be used over others
+    void $ importFromAlias "Data.Set" "Set"
+      { val: importValue "NotUsed.isEmpty"
+      , ty: importType "Set"
+      }
+
+    -- Duplicate qualified module import will defer to simple alias version
+    void $ importFromAlias "Data.Either" "Either" $ importValue "either"
+    void $ importFrom "Data.Either" $ importValue "Either.isRight"
+
     maybeTy <- importFrom "Data.Maybe" (importType "Maybe")
     justCtor <- importFrom "Data.Maybe" (importCtor "Maybe" "Just")
     maybeFn <- importFrom "Data.Maybe" (importValue "maybe")
@@ -23,30 +42,30 @@ test = unsafePartial do
       write $ declSignature "getNum" do
         typeArrow
           [ typeCtor "String"
-          , typeApp (typeCtor mapTy) [ typeCtor "String", typeCtor "Int" ]
+          , typeApp mapTy [ typeCtor "String", typeCtor "Int" ]
           ]
-          ( typeApp (typeCtor maybeTy)
+          ( typeApp maybeTy
               [ typeCtor "Int" ]
           )
       write $ declValue "getNum" [ binderVar "key" ] do
         exprOp
-          ( exprApp (exprIdent maybeFn)
-              [ exprApp (exprCtor justCtor)
+          ( exprApp maybeFn
+              [ exprApp justCtor
                   [ exprInt 0 ]
               ]
           )
           [ binaryOp "<<<"
-              ( exprApp (exprIdent mapLookup)
+              ( exprApp mapLookup
                   [ exprIdent "key" ]
               )
           ]
       write $ declValue "alt'" [ binderVar "a", binderVar "b" ] do
         exprOp (exprIdent "a")
-          [ binaryOp altOp
+          [ altOp.binaryOp
               (exprIdent "b")
           ]
       write $ declValue "alt''" [ binderVar "a", binderVar "b" ] do
-        exprApp (exprOpName altOp)
+        exprApp altOp.exprOpName
           [ exprIdent "a"
           , exprIdent "b"
           ]

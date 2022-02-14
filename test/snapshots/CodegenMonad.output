@@ -1,11 +1,15 @@
 module Test.Monad (alt', alt'', getNum) where
 
 import Prelude
+import Prim hiding (Type)
+import Prim.Boolean
 
 import Control.Alt ((<|>))
+import Data.Either as Either
 import Data.Map (Map)
 import Data.Map as Map
 import Data.Maybe (Maybe(..), maybe)
+import Data.Set (Set, isEmpty) as Set
 
 getNum :: String -> Map String Int -> Maybe Int
 getNum key = maybe (Just 0) <<< Map.lookup key

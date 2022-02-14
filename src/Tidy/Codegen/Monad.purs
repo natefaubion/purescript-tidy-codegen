@@ -1,10 +1,17 @@
 module Tidy.Codegen.Monad
-  ( CodegenState
+  ( UnqualifiedImportModule(..)
+  , CodegenState
   , CodegenT(..)
   , Codegen
   , CodegenExport(..)
   , CodegenImport(..)
   , ImportName(..)
+  , ImportFromValue
+  , ImportFromType
+  , ImportFromTypeOp
+  , ImportFromOp
+  , ImportFromClass
+  , ImportFromCtor
   , write
   , writeAndExport
   , exportValue
@@ -16,7 +23,9 @@ module Tidy.Codegen.Monad
   , exportModule
   , exporting
   , importFrom
+  , importFromAlias
   , importOpen
+  , importOpenHiding
   , importValue
   , importOp
   , importType
@@ -35,6 +44,7 @@ module Tidy.Codegen.Monad
   ) where
 
 import Prelude
+import Prim hiding (Type)
 
 import Control.Monad.Free (Free, runFree)
 import Control.Monad.ST.Class (class MonadST, liftST)
@@ -49,25 +59,28 @@ import Data.List (List)
 import Data.List as List
 import Data.Map (Map)
 import Data.Map as Map
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), maybe)
 import Data.Set (Set)
 import Data.Set as Set
+import Data.Set.NonEmpty (NonEmptySet)
+import Data.Set.NonEmpty as NES
 import Data.Symbol (class IsSymbol)
 import Data.Tuple (Tuple(..), fst, snd)
 import Effect.Class (class MonadEffect, liftEffect)
+import Prim as Prim
 import Prim.Row as Row
 import Prim.RowList (class RowToList, RowList)
 import Prim.RowList as RowList
-import PureScript.CST.Types (Declaration(..), Export, Foreign(..), Ident, Import, Labeled(..), Module, ModuleName, Name(..), Operator, Proper, QualifiedName(..))
+import PureScript.CST.Types (Declaration(..), Export, Expr, Foreign(..), Ident, Import, Labeled(..), Module, ModuleName, Name(..), Operator, Proper, QualifiedName(..), Type)
 import Record as Record
 import Record.Builder (Builder)
 import Record.Builder as Builder
 import Safe.Coerce (coerce)
-import Tidy.Codegen (module_)
+import Tidy.Codegen (binaryOp, exprCtor, exprIdent, exprOpName, module_, typeCtor, typeOpName)
 import Tidy.Codegen as Codegen
 import Tidy.Codegen.Class (class ToModuleName, class ToName, class ToToken, toModuleName, toQualifiedName, toToken)
 import Tidy.Codegen.Common (toSourceToken)
-import Tidy.Codegen.Types (Qualified(..), SymbolName)
+import Tidy.Codegen.Types (BinaryOp, Qualified(..), SymbolName)
 import Type.Proxy (Proxy(..))
 
 data CodegenExport
@@ -91,11 +104,27 @@ data CodegenImport
 derive instance Eq CodegenImport
 derive instance Ord CodegenImport
 
+data UnqualifiedImportModule
+  = Closed (NonEmptySet CodegenImport)
+  | Open
+  | OpenHiding (NonEmptySet CodegenImport)
+
+derive instance Eq UnqualifiedImportModule
+derive instance Ord UnqualifiedImportModule
+
 type CodegenState e =
   { exports :: Set CodegenExport
-  , importsOpen :: Set ModuleName
-  , importsFrom :: Map ModuleName (Set (CodegenImport))
-  , importsQualified :: Map ModuleName (Set ModuleName)
+  , importsUnqualified :: Map ModuleName UnqualifiedImportModule
+  -- If a qualified import with explicit members (e.g. `import Foo (baz) as Bar`) is imported
+  -- and then the same module is imported with the same qualifier
+  -- but without any members (e.g. `import Foo as Bar`),
+  -- then the no-member qualified import version "wins":
+  -- For example, if the module is imported twice like this:
+  --    import Foo (baz) as Bar
+  --    import Foo as Bar
+  -- then the output will only have this:
+  --    import Foo as Bar
+  , importsQualified :: Map ModuleName (Map ModuleName (Set CodegenImport))
   , declarations :: List (Declaration e)
   }
 
@@ -239,27 +268,92 @@ importFrom mod = toImportFrom \(ImportName imp qn@(QualifiedName { module: mbMod
   CodegenT $ state \st -> do
     Tuple qn $ case mbMod of
       Nothing -> st
-        { importsFrom = Map.alter
-            case imp, _ of
-              CodegenImportType true n, Just is ->
-                Just $ Set.insert imp $ Set.delete (CodegenImportType false n) is
-              CodegenImportType false n, Just is | Set.member (CodegenImportType true n) is ->
-                Just is
-              _, Just is ->
-                Just $ Set.insert imp is
-              _, Nothing ->
-                Just $ Set.singleton imp
+        { importsUnqualified = Map.alter
+            case _ of
+              Nothing ->
+                Just $ Closed $ NES.singleton imp
+              is@(Just (Closed closedImports)) ->
+                case imp of
+                  CodegenImportType true n ->
+                    Just $ Closed
+                      $ maybe (NES.singleton imp) (NES.insert imp)
+                      $ NES.delete (CodegenImportType false n) closedImports
+                  CodegenImportType false n | NES.member (CodegenImportType true n) closedImports ->
+                    is
+                  _ ->
+                    Just $ Closed $ NES.insert imp closedImports
+              openOrOpenHiding ->
+                openOrOpenHiding
             (toModuleName mod)
-            st.importsFrom
+            st.importsUnqualified
         }
       Just qualMod -> st
         { importsQualified = Map.alter
             case _ of
-              Nothing -> Just $ Set.singleton qualMod
-              Just ms -> Just $ Set.insert qualMod ms
+              Nothing -> Just $ Map.singleton qualMod Set.empty
+              Just aliases -> Just $ Map.alter
+                (const $ Just Set.empty)
+                qualMod
+                aliases
             (toModuleName mod)
             st.importsQualified
         }
+
+-- | Imports from a particular module, guaranteeing that the
+-- | imported members are always referenced via the given qualifier.
+-- |
+-- | ```purescript
+-- | example = do
+-- |   -- Generates a `import Effect.Class.Console (log) as Console` import
+-- |   consoleLog <- importFromAlias "Effect.Class.Console" "Console" $ importValue "log"
+-- |   -- Generates a `import Data.Map (Map) as MyMap` import
+-- |   mapType <- importFromAlias "Data.Map" "MyMap" $ importType "Something.Map"
+-- |   -- Group multiple imports with a record
+-- |   dataMap <- importFromAlias "Data.Map" "Map2"
+-- |     { type: importType "Map"
+-- |     , lookup: importValue "Map.lookup"
+-- |     }
+-- |   ...
+-- | ```
+importFromAlias
+  :: forall e m mod alias name imp
+   . Monad m
+  => ToModuleName mod
+  => ToModuleName alias
+  => ToImportFrom name imp
+  => mod
+  -> alias
+  -> name
+  -> CodegenT e m imp
+importFromAlias mod alias = toImportFrom \(ImportName imp (QualifiedName qnRec)) -> do
+  let
+    qualMod = toModuleName alias
+    qn = QualifiedName $ qnRec { module = Just qualMod }
+  CodegenT $ state \st -> do
+    Tuple qn $ st
+      { importsQualified = Map.alter
+          case _ of
+            Nothing -> Just $ Map.singleton qualMod $ Set.singleton imp
+            Just aliases -> Just $ Map.alter
+              case _ of
+                Nothing ->
+                  Just $ Set.singleton imp
+                is@(Just explicitImports)
+                  | Set.isEmpty explicitImports -> is
+                  | otherwise ->
+                      case imp of
+                        CodegenImportType true n ->
+                          Just $ Set.insert imp
+                            $ Set.delete (CodegenImportType false n) explicitImports
+                        CodegenImportType false n | Set.member (CodegenImportType true n) explicitImports ->
+                          is
+                        _ ->
+                          Just $ Set.insert imp explicitImports
+              qualMod
+              aliases
+          (toModuleName mod)
+          st.importsQualified
+      }
 
 -- | Imports a module with an open import.
 -- |
@@ -270,7 +364,55 @@ importFrom mod = toImportFrom \(ImportName imp qn@(QualifiedName { module: mbMod
 -- | ```
 importOpen :: forall e m mod. Monad m => ToModuleName mod => mod -> CodegenT e m Unit
 importOpen mod = CodegenT $ modify_ \st ->
-  st { importsOpen = Set.insert (toModuleName mod) st.importsOpen }
+  st
+    { importsUnqualified = Map.alter
+        case _ of
+          Nothing ->
+            Just $ Open
+          Just (Closed _) ->
+            Just $ Open
+          openOrOpenHidingImports ->
+            openOrOpenHidingImports
+        (toModuleName mod)
+        st.importsUnqualified
+    }
+
+-- | Imports a module as an open import with imported members hidden.
+-- |
+-- | ```purescript
+-- | example = do
+-- |   importOpenHiding "Prim"
+-- |     { someType: importType "Type" }
+-- |   ...
+-- | ```
+importOpenHiding
+  :: forall e m mod name imp
+   . Monad m
+  => ToModuleName mod
+  => ToImportFrom name imp
+  => mod
+  -> name
+  -> CodegenT e m Unit
+importOpenHiding mod = void <<< toImportFrom \(ImportName imp qn) ->
+  CodegenT $ state \st -> do
+    Tuple qn $ st
+      { importsUnqualified = Map.alter
+          case _ of
+            is@(Just (OpenHiding hiddenImports)) ->
+              case imp of
+                CodegenImportType true n ->
+                  Just $ OpenHiding
+                    $ maybe (NES.singleton imp) (NES.insert imp)
+                    $ NES.delete (CodegenImportType false n) hiddenImports
+                CodegenImportType false n | NES.member (CodegenImportType true n) hiddenImports ->
+                  is
+                _ ->
+                  Just $ OpenHiding $ NES.insert imp hiddenImports
+            _ ->
+              Just $ OpenHiding $ NES.singleton imp
+          (toModuleName mod)
+          st.importsUnqualified
+      }
 
 withQualifiedName :: forall from to r. ToToken from (Qualified to) => (to -> QualifiedName to -> r) -> from -> r
 withQualifiedName k from = do
@@ -278,28 +420,28 @@ withQualifiedName k from = do
   k name (QualifiedName { module: mn, name, token: toSourceToken token })
 
 -- | Imports a value. Use with `importFrom`.
-importValue :: forall name. ToToken name (Qualified Ident) => name -> ImportName Ident
-importValue = withQualifiedName (ImportName <<< CodegenImportValue)
+importValue :: forall name. ToToken name (Qualified Ident) => name -> ImportFromValue
+importValue = ImportFromValue <<< withQualifiedName (ImportName <<< CodegenImportValue)
 
 -- | Imports a value operator, yield. Use with `importFrom`.
-importOp :: forall name. ToToken name (Qualified SymbolName) => name -> ImportName Operator
-importOp = withQualifiedName \a b -> ImportName (CodegenImportOp a) (toQualifiedName b)
+importOp :: forall name. ToToken name (Qualified SymbolName) => name -> ImportFromOp
+importOp = ImportFromOp <<< withQualifiedName \a b -> ImportName (CodegenImportOp a) (toQualifiedName b)
 
 -- | Imports a type operator. Use with `importFrom`.
-importTypeOp :: forall name. ToToken name (Qualified SymbolName) => name -> ImportName Operator
-importTypeOp = withQualifiedName \a b -> ImportName (CodegenImportTypeOp a) (toQualifiedName b)
+importTypeOp :: forall name. ToToken name (Qualified SymbolName) => name -> ImportFromTypeOp
+importTypeOp = ImportFromTypeOp <<< withQualifiedName \a b -> ImportName (CodegenImportTypeOp a) (toQualifiedName b)
 
 -- | Imports a class. Use with `importFrom`.
-importClass :: forall name. ToToken name (Qualified Proper) => name -> ImportName Proper
-importClass = withQualifiedName (ImportName <<< CodegenImportClass)
+importClass :: forall name. ToToken name (Qualified Proper) => name -> ImportFromClass
+importClass = ImportFromClass <<< withQualifiedName (ImportName <<< CodegenImportClass)
 
 -- | Imports a type. Use with `importFrom`.
-importType :: forall name. ToToken name (Qualified Proper) => name -> ImportName Proper
-importType = withQualifiedName (ImportName <<< CodegenImportType false)
+importType :: forall name. ToToken name (Qualified Proper) => name -> ImportFromType
+importType = ImportFromType <<< withQualifiedName (ImportName <<< CodegenImportType false)
 
 -- | Imports a type. Use with `importFrom`.
-importTypeAll :: forall name. ToToken name (Qualified Proper) => name -> ImportName Proper
-importTypeAll = withQualifiedName (ImportName <<< CodegenImportType true)
+importTypeAll :: forall name. ToToken name (Qualified Proper) => name -> ImportFromCtor
+importTypeAll = ImportFromCtor <<< withQualifiedName (ImportName <<< CodegenImportType true)
 
 -- | Imports a data constructor for a type. Use with `importFrom`.
 -- |
@@ -307,15 +449,14 @@ importTypeAll = withQualifiedName (ImportName <<< CodegenImportType true)
 -- | example = do
 -- |   just <- importFrom "Data.Maybe" (importCtor "Maybe" "Just")
 -- | ```
-importCtor :: forall ty ctor. ToToken ty Proper => ToToken ctor (Qualified Proper) => ty -> ctor -> ImportName Proper
-importCtor = withQualifiedName <<< const <<< ImportName <<< CodegenImportType true <<< snd <<< toToken
+importCtor :: forall ty ctor. ToToken ty Proper => ToToken ctor (Qualified Proper) => ty -> ctor -> ImportFromCtor
+importCtor ty ctor = ImportFromCtor $ withQualifiedName (const $ ImportName $ CodegenImportType true $ snd $ toToken ty) ctor
 
 -- | Extracts codegen state and the produced value.
 runCodegenT :: forall m e a. CodegenT e m a -> m (Tuple a (CodegenState e))
 runCodegenT (CodegenT m) = runStateT m
   { exports: Set.empty
-  , importsOpen: Set.empty
-  , importsFrom: Map.empty
+  , importsUnqualified: Map.empty
   , importsQualified: Map.empty
   , declarations: List.Nil
   }
@@ -342,23 +483,36 @@ moduleFromCodegenState name st = module_ name exports (importsOpen <> importsNam
       # Array.fromFoldable
       # map codegenExportToCST
 
-  importsOpen =
-    st.importsOpen
-      # Array.fromFoldable
-      # map (flip Codegen.declImport [])
-      # withLeadingBreaks
+  unqualImports =
+    st.importsUnqualified
+      # Map.toUnfoldable
+      # flip Array.foldl { open: [], closed: [] }
+          ( \acc -> case _ of
+              Tuple mn (OpenHiding set) ->
+                acc
+                  { open = Array.snoc acc.open
+                      $ Codegen.declImportHiding mn
+                      $ codegenImportToCST <$> NES.toUnfoldable set
+                  }
+              Tuple mn Open ->
+                acc
+                  { open = Array.snoc acc.open $ Codegen.declImport mn []
+                  }
+              Tuple mn (Closed set) ->
+                acc
+                  { closed = Array.snoc acc.closed $ Tuple mn $ Codegen.declImport mn $ codegenImportToCST <$> NES.toUnfoldable set
+                  }
+          )
 
-  importsFrom = do
-    Tuple mn imps <- Map.toUnfoldable st.importsFrom
-    pure $ Tuple mn $ Codegen.declImport mn $ codegenImportToCST <$> Set.toUnfoldable imps
+  importsOpen = withLeadingBreaks unqualImports.open
 
   importsQualified = do
     Tuple mn quals <- Map.toUnfoldable st.importsQualified
-    qual <- Set.toUnfoldable quals
-    pure $ Tuple mn $ Codegen.declImportAs mn [] qual
+    Tuple alias explicitImps <- Map.toUnfoldable quals
+    pure $ Tuple mn $ Codegen.declImportAs mn (codegenImportToCST <$> Set.toUnfoldable explicitImps) alias
 
   importsNamed = withLeadingBreaks do
-    (map (map Left) importsFrom <> map (map Right) importsQualified)
+    (map (map Left) unqualImports.closed <> map (map Right) importsQualified)
       # Array.sortBy (comparing fst)
       # map (either identity identity <<< snd)
 
@@ -386,13 +540,37 @@ codegenImportToCST = case _ of
   CodegenImportValue name -> Codegen.importValue name
   CodegenImportOp name -> Codegen.importOp name
 
+newtype ImportFromType = ImportFromType (ImportName Proper)
+newtype ImportFromCtor = ImportFromCtor (ImportName Proper)
+newtype ImportFromTypeOp = ImportFromTypeOp (ImportName Operator)
+newtype ImportFromValue = ImportFromValue (ImportName Ident)
+newtype ImportFromOp = ImportFromOp (ImportName Operator)
+newtype ImportFromClass = ImportFromClass (ImportName Proper)
+
 type ImportResolver f = forall n. ImportName n -> f (QualifiedName n)
 
 class ToImportFrom name imp | name -> imp where
   toImportFrom :: forall f. Applicative f => ImportResolver f -> name -> f imp
 
-instance ToImportFrom (ImportName name) (QualifiedName name) where
-  toImportFrom = ($)
+instance ToImportFrom ImportFromValue (Expr e) where
+  toImportFrom f (ImportFromValue a) = map exprIdent (f a)
+
+instance ToImportFrom ImportFromType (Type e) where
+  toImportFrom f (ImportFromType a) = map typeCtor (f a)
+
+instance ToImportFrom ImportFromCtor (Expr e) where
+  toImportFrom f (ImportFromCtor a) = map exprCtor (f a)
+
+instance ToImportFrom ImportFromClass (Type e) where
+  toImportFrom f (ImportFromClass a) = map typeCtor (f a)
+
+instance ToImportFrom ImportFromTypeOp { binaryOp :: b -> BinaryOp b, typeOpName :: Type e } where
+  toImportFrom f (ImportFromTypeOp a) =
+    map (\op -> { binaryOp: binaryOp op, typeOpName: typeOpName op }) (f a)
+
+instance ToImportFrom ImportFromOp { binaryOp :: b -> BinaryOp b, exprOpName :: Expr e } where
+  toImportFrom f (ImportFromOp a) =
+    map (\op -> { binaryOp: binaryOp op, exprOpName: exprOpName op }) (f a)
 
 instance
   ( RowToList rin rl
@@ -401,7 +579,7 @@ instance
   ToImportFrom (Record rin) (Record rout) where
   toImportFrom k = map Builder.buildFromScratch <<< toImportFromRecord k (Proxy :: _ rl)
 
-class ToImportFromRecord (rl :: RowList Type) rin rout | rl rin -> rout where
+class ToImportFromRecord (rl :: RowList Prim.Type) rin rout | rl rin -> rout where
   toImportFromRecord :: forall f. Applicative f => ImportResolver f -> Proxy rl -> rin -> f (Builder {} rout)
 
 instance
