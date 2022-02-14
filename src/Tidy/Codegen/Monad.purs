@@ -123,15 +123,15 @@ derive instance Ord UnqualifiedImportModule
 type CodegenState e =
   { exports :: Set CodegenExport
   , importsUnqualified :: Map ModuleName UnqualifiedImportModule
-  -- | `import Foo as Bar` = `Map.singleton "Foo" $ Map.singleton "Bar" Nothing`
-  -- | `import Foo (baz) as Bar` = `Map.singleton "Foo" $ Map.singleton "Bar" $ Just $ NES.singleton "baz"`
-  -- |
-  -- | If a module is imported multiple times qualified,
-  -- | import forms on the left will be overridden by import forms on the right
-  -- | ```
-  -- | let map1 = Map.singleton
-  -- | (map1 "foo" (map1 "bar" $ Set.singleton "baz")) < (map1 "foo" (map1 "bar" Set.empty))
-  -- | ```
+  -- If a qualified import with explicit members (e.g. `import Foo (baz) as Bar`) is imported
+  -- and then the same module is imported with the same qualifier
+  -- but without any members (e.g. `import Foo as Bar`),
+  -- then the no-member qualified import version "wins":
+  -- For example, if the module is imported twice like this:
+  --    import Foo (baz) as Bar
+  --    import Foo as Bar
+  -- then the output will only have this:
+  --    import Foo as Bar
   , importsQualified :: Map ModuleName (Map ModuleName (Set CodegenImport))
   , declarations :: List (Declaration e)
   }
