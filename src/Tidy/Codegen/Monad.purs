@@ -104,18 +104,10 @@ data CodegenImport
 derive instance Eq CodegenImport
 derive instance Ord CodegenImport
 
--- | `import Foo` = `OpenHiding Set.empty`
--- | `import Foo hiding (bar)` = `OpenHiding (Set.singleton bar)`
--- | `import Foo (bar)` = `ClosedImporting (NES.singleton bar)`
--- |
--- | If a module is imported multiple times unqualified,
--- | import forms on the left will be overridden by import forms on the right
--- | ```
--- | ClosedImport _ < OpenImport Set.empty < OpenImport nonEmptySet
--- | ```
 data UnqualifiedImportModule
   = ClosedImporting (NonEmptySet CodegenImport)
-  | OpenHiding (Set CodegenImport)
+  | Open
+  | OpenHiding (NonEmptySet CodegenImport)
 
 derive instance Eq UnqualifiedImportModule
 derive instance Ord UnqualifiedImportModule
@@ -280,8 +272,6 @@ importFrom mod = toImportFrom \(ImportName imp qn@(QualifiedName { module: mbMod
             case _ of
               Nothing ->
                 Just $ ClosedImporting $ NES.singleton imp
-              is@(Just (OpenHiding _)) ->
-                is
               is@(Just (ClosedImporting closedImports)) ->
                 case imp of
                   CodegenImportType true n ->
@@ -292,6 +282,8 @@ importFrom mod = toImportFrom \(ImportName imp qn@(QualifiedName { module: mbMod
                     is
                   _ ->
                     Just $ ClosedImporting $ NES.insert imp closedImports
+              openOrOpenHiding ->
+                openOrOpenHiding
             (toModuleName mod)
             st.importsUnqualified
         }
@@ -376,11 +368,11 @@ importOpen mod = CodegenT $ modify_ \st ->
     { importsUnqualified = Map.alter
         case _ of
           Nothing ->
-            Just $ OpenHiding Set.empty
+            Just $ Open
           Just (ClosedImporting _) ->
-            Just $ OpenHiding Set.empty
-          alreadyOpenAndHidingImports ->
-            alreadyOpenAndHidingImports
+            Just $ Open
+          openOrOpenHidingImports ->
+            openOrOpenHidingImports
         (toModuleName mod)
         st.importsUnqualified
     }
@@ -410,14 +402,14 @@ importOpenHiding mod = void <<< toImportFrom \(ImportName imp qn) ->
               case imp of
                 CodegenImportType true n ->
                   Just $ OpenHiding
-                    $ Set.insert imp
-                    $ Set.delete (CodegenImportType false n) hiddenImports
-                CodegenImportType false n | Set.member (CodegenImportType true n) hiddenImports ->
+                    $ maybe (NES.singleton imp) (NES.insert imp)
+                    $ NES.delete (CodegenImportType false n) hiddenImports
+                CodegenImportType false n | NES.member (CodegenImportType true n) hiddenImports ->
                   is
                 _ ->
-                  Just $ OpenHiding $ Set.insert imp hiddenImports
+                  Just $ OpenHiding $ NES.insert imp hiddenImports
             _ ->
-              Just $ OpenHiding $ Set.singleton imp
+              Just $ OpenHiding $ NES.singleton imp
           (toModuleName mod)
           st.importsUnqualified
       }
@@ -498,9 +490,13 @@ moduleFromCodegenState name st = module_ name exports (importsOpen <> importsNam
           ( \acc -> case _ of
               Tuple mn (OpenHiding set) ->
                 acc
-                  { open = Array.snoc acc.open $
-                      if Set.isEmpty set then Codegen.declImport mn []
-                      else Codegen.declImportHiding mn $ codegenImportToCST <$> Set.toUnfoldable set
+                  { open = Array.snoc acc.open
+                      $ Codegen.declImportHiding mn
+                      $ codegenImportToCST <$> NES.toUnfoldable set
+                  }
+              Tuple mn Open ->
+                acc
+                  { open = Array.snoc acc.open $ Codegen.declImport mn []
                   }
               Tuple mn (ClosedImporting set) ->
                 acc
