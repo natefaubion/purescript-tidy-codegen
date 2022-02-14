@@ -15,6 +15,12 @@ derive instance Newtype SymbolName _
 derive newtype instance Eq SymbolName
 derive newtype instance Ord SymbolName
 
+newtype HoleName = HoleName String
+
+derive instance Newtype HoleName _
+derive instance Eq HoleName
+derive instance Ord HoleName
+
 data Qualified a = Qualified (Maybe ModuleName) a
 
 derive instance Functor Qualified
