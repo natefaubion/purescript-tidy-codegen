@@ -117,8 +117,8 @@ data UnqualifiedImportModule
   = ClosedImporting (NonEmptySet CodegenImport)
   | OpenHiding (Set CodegenImport)
 
-derive instance eqUnqualifiedImportModule :: Eq UnqualifiedImportModule
-derive instance ordUnqualifiedImportModule :: Ord UnqualifiedImportModule
+derive instance Eq UnqualifiedImportModule
+derive instance Ord UnqualifiedImportModule
 
 type CodegenState e =
   { exports :: Set CodegenExport
