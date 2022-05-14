@@ -2,7 +2,7 @@ module Test.Snapshot where
 
 import Prelude
 
-import Control.MonadZero (guard)
+import Control.Alternative (guard)
 import Control.Parallel (parTraverse)
 import Data.Array (mapMaybe)
 import Data.Array as Array
