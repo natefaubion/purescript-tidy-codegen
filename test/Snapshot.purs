@@ -72,7 +72,7 @@ snapshotMainOutput directory accept mbPattern = do
 
   runSnapshot :: String -> Aff SnapshotTest
   runSnapshot name = flip catchError (makeErrorResult name) do
-    result <- exec $ "node -e 'require(\"./output/" <> name <> "/index.js\").main()'"
+    result <- exec $ "node --input-type=module -e 'import { main } from \"./output/" <> name <> "/index.js\";main()'"
     case result of
       { error: Just err } ->
         throwError err
