@@ -541,6 +541,8 @@ instance OverLeadingComments e => OverLeadingComments (CST.Type e) where
     TypeWildcard a -> TypeWildcard (overLeadingComments k a)
     TypeHole a -> TypeHole (overLeadingComments k a)
     TypeString a b -> TypeString (overLeadingComments k a) b
+    TypeInt (Just a) b c -> TypeInt (Just (overLeadingComments k a)) b c
+    TypeInt _ b c -> TypeInt Nothing (overLeadingComments k b) c
     TypeRow a -> TypeRow (overLeadingComments k a)
     TypeRecord a -> TypeRecord (overLeadingComments k a)
     TypeForall a b c d -> TypeForall (overLeadingComments k a) b c d
@@ -552,7 +554,6 @@ instance OverLeadingComments e => OverLeadingComments (CST.Type e) where
     TypeArrowName a -> TypeArrowName (overLeadingComments k a)
     TypeConstrained a b c -> TypeConstrained (overLeadingComments k a) b c
     TypeParens a -> TypeParens (overLeadingComments k a)
-    TypeUnaryRow a b -> TypeUnaryRow (overLeadingComments k a) b
     TypeError e -> TypeError (overLeadingComments k e)
 
 instance OverLeadingComments e => OverLeadingComments (Expr e) where

@@ -1,35 +1,9 @@
 let upstream =
-      https://github.com/purescript/package-sets/releases/download/psc-0.14.3-20210811/packages.dhall sha256:a2de7ef2f2e753733eddfa90573a82da0c7c61d46fa87d015b7f15ef8a6e97d5
+      https://github.com/purescript/package-sets/releases/download/psc-0.15.0-20220513/packages.dhall
+        sha256:1ed784f37ae6131d99acd542d058d5ce39954ccaacc3adba5cc7cf1549d2bffa
 
 let additions =
-      { dodo-printer =
-        { dependencies =
-          [ "ansi", "foldable-traversable", "lists", "maybe", "strings" ]
-        , repo = "https://github.com/natefaubion/purescript-dodo-printer.git"
-        , version = "v2.1.0"
-        }
-      , language-cst-parser =
-        { dependencies =
-          [ "arrays"
-          , "const"
-          , "effect"
-          , "either"
-          , "foldable-traversable"
-          , "free"
-          , "functors"
-          , "maybe"
-          , "numbers"
-          , "ordered-collections"
-          , "strings"
-          , "transformers"
-          , "tuples"
-          , "typelevel-prelude"
-          ]
-        , repo =
-            "https://github.com/natefaubion/purescript-language-cst-parser.git"
-        , version = "v0.9.1"
-        }
-      , tidy =
+      { tidy =
         { dependencies =
           [ "arrays"
           , "dodo-printer"
@@ -43,9 +17,8 @@ let additions =
           , "strings"
           , "tuples"
           ]
-        , repo =
-            "https://github.com/natefaubion/purescript-tidy.git"
-        , version = "v0.7.0"
+        , repo = "https://github.com/natefaubion/purescript-tidy.git"
+        , version = "v0.9.0"
         }
       }
 

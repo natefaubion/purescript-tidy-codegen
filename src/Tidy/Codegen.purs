@@ -122,6 +122,7 @@ module Tidy.Codegen
   , typeRow
   , typeRowEmpty
   , typeString
+  , typeInt
   , typeVar
   , typeVarKinded
   , typeWildcard
@@ -327,6 +328,17 @@ typeRecordEmpty = typeRecord ([] :: Array (Tuple Label _)) Nothing
 -- | ```
 typeString :: forall e. String -> CST.Type e
 typeString str = TypeString (toSourceToken (TokString (unwrap (escapeSourceString str)) str)) str
+
+-- | Constructs a type-level int
+-- |
+-- | ```
+-- | exampleType = typeInt (-1)
+-- | ```
+typeInt :: forall e. Int -> CST.Type e
+typeInt n = TypeInt neg (toSourceToken (TokInt (show val) (SmallInt val))) (SmallInt val)
+  where
+  val = abs n
+  neg = if n < 0 then Just tokNegate else Nothing
 
 -- | Constructs a type with a kind annotation.
 -- |
