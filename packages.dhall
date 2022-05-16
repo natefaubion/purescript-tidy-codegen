@@ -18,7 +18,7 @@ let additions =
           , "tuples"
           ]
         , repo = "https://github.com/natefaubion/purescript-tidy.git"
-        , version = "trh/purs-0.15"
+        , version = "v0.9.0"
         }
       }
 
