@@ -27,8 +27,7 @@ exampleModule = unsafePartial $ codegenModule "Data.Maybe" do
         , dataCtor "Just" [ typeVar "a" ]
         ]
 
-    , declDerive Nothing []
-        (typeApp "Functor" [ typeCtor "Maybe" ])
+    , declDerive Nothing [] "Functor" [ typeCtor "Maybe" ]
 
     , declSignature "maybe" do
         typeForall [ typeVar "a", typeVar "b" ] do
@@ -38,9 +37,10 @@ exampleModule = unsafePartial $ codegenModule "Data.Maybe" do
             , typeApp (typeCtor "Maybe") [ typeVar "a" ]
             ]
             (typeVar "b")
+
     , declValue "maybe" [ binderVar "nothing", binderVar "just" ] do
         exprCase [ exprSection ]
-          [ caseBranch [ binderCtor "Just" [ bindarVar "a" ] ] do
+          [ caseBranch [ binderCtor "Just" [ binderVar "a" ] ] do
               exprApp (exprIdent "just") [ exprIdent "a" ]
           , caseBranch [ binderCtor "Nothing" [] ] do
               exprIdent "nothing"
