@@ -17,7 +17,7 @@ import PureScript.CST.Types as CST
 import Safe.Coerce (coerce)
 import Tidy.Codegen.Common (toSeparated, toSourceToken, tokColon, tokComma, tokForFixity, tokForRole, tokPipe)
 import Tidy.Codegen.String (escapeSourceString)
-import Tidy.Codegen.Types (GuardedBranch(..), Qualified(..), SymbolName(..))
+import Tidy.Codegen.Types (GuardedBranch(..), HoleName(..), Qualified(..), SymbolName(..))
 import Type.Equality (class TypeEquals, proof)
 import Type.Equality as TypeEquals
 
@@ -77,6 +77,9 @@ instance Partial => ToToken String SymbolName where
     Right tok@(TokSymbolName Nothing sym) -> Tuple tok (SymbolName sym)
     Right (TokOperator Nothing sym) -> Tuple (TokSymbolName Nothing sym) (SymbolName str)
     _ -> crashWith $ "Not a SymbolName: " <> str
+
+instance Partial => ToToken String HoleName where
+  toToken = toTokenFromString (ErrorPrefix "Not a HoleName")
 
 instance ToToken (Name SymbolName) SymbolName where
   toToken (Name { name, token }) = Tuple token.value name
@@ -227,6 +230,9 @@ instance ToName (Name Operator) SymbolName where
           _ -> token
     }
 
+instance Partial => ToName String HoleName where
+  toName = defaultToName
+
 instance ToName String Label where
   toName = defaultToName
 
@@ -258,6 +264,11 @@ instance FromToken (Qualified Ident) where
 instance FromToken Proper where
   fromToken = case _ of
     TokUpperName Nothing str -> Just (Proper str)
+    _ -> Nothing
+
+instance FromToken HoleName where
+  fromToken = case _ of
+    TokHole str -> Just (HoleName str)
     _ -> Nothing
 
 instance FromToken (Qualified Proper) where
