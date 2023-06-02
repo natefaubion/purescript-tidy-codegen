@@ -28,6 +28,7 @@ exprOpNameExample = (<>)
 exprDotExample = response.body.users
 exprUpdateExample = user { age = 42, phone { countryCode = 1 } }
 exprAppExample = Map.lookup userId users
+exprTypeAppExample = Map.lookup @String @(Maybe User) userId users
 exprLambdaExample = \a b -> a <> b
 exprIfExample = if isLoggedIn user then renderPage else httpError 400
 exprCaseExample = case xs of
