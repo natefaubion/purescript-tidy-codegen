@@ -83,6 +83,7 @@ module Tidy.Codegen
   , exprRecord
   , exprSection
   , exprString
+  , exprTypeApp
   , exprTyped
   , exprUpdate
   , exprWhere
@@ -132,6 +133,7 @@ module Tidy.Codegen
 
 import Prelude
 
+import Control.Alt ((<|>))
 import Data.Array as Array
 import Data.Array.NonEmpty as NonEmptyArray
 import Data.Bifunctor (bimap, lmap)
@@ -146,7 +148,7 @@ import Data.String.CodeUnits as SCU
 import Data.Tuple (Tuple(..), curry)
 import Dodo (plainText)
 import Dodo as Dodo
-import PureScript.CST.Types (Binder(..), ClassFundep, Comment(..), DataCtor(..), DataMembers(..), Declaration(..), DoStatement(..), Export(..), Expr(..), Fixity, FixityOp(..), Foreign(..), Guarded, Ident, Import(..), ImportDecl(..), Instance(..), InstanceBinding(..), InstanceHead, IntValue(..), Label, Labeled(..), LetBinding(..), LineFeed(..), Module(..), ModuleBody(..), ModuleHeader(..), ModuleName, Name, Operator(..), PatternGuard(..), Proper, QualifiedName(..), RecordUpdate(..), Role, Separated(..), SourceToken, Token(..), Type(..), TypeVarBinding(..), Where(..), Wrapped(..))
+import PureScript.CST.Types (AppSpine(..), Binder(..), ClassFundep, Comment(..), DataCtor(..), DataMembers(..), Declaration(..), DoStatement(..), Export(..), Expr(..), Fixity, FixityOp(..), Foreign(..), Guarded, Ident, Import(..), ImportDecl(..), Instance(..), InstanceBinding(..), InstanceHead, IntValue(..), Label, Labeled(..), LetBinding(..), LineFeed(..), Module(..), ModuleBody(..), ModuleHeader(..), ModuleName, Name, Operator(..), PatternGuard(..), Prefixed(..), Proper, QualifiedName(..), RecordUpdate(..), Role, Separated(..), SourceToken, Token(..), Type(..), TypeVarBinding(..), Where(..), Wrapped(..))
 import PureScript.CST.Types as CST
 import Safe.Coerce (coerce)
 import Tidy (ImportWrapOption(..), TypeArrowOption(..), UnicodeOption(..), defaultFormatOptions, formatModule, toDoc)
@@ -258,12 +260,19 @@ class TypeVar a e | a -> e where
   -- | An overloaded constructor for kinded type variables.
   typeVarKinded :: forall name. ToName name Ident => name -> CST.Type e -> a
 
-instance TypeVar (TypeVarBinding e) e where
+instance TypeVar (TypeVarBinding (Name Ident) e) e where
   typeVar = TypeVarName <<< toName
   typeVarKinded name value =
     TypeVarKinded
       $ toWrapped tokLeftParen tokRightParen
       $ Labeled { label: toName name, separator: tokDoubleColon, value }
+
+instance TypeVar (TypeVarBinding (Prefixed (Name Ident)) e) e where
+  typeVar = TypeVarName <<< Prefixed <<< { prefix: Nothing, value: _ } <<< toName
+  typeVarKinded name value =
+    TypeVarKinded
+      $ toWrapped tokLeftParen tokRightParen
+      $ Labeled { label: Prefixed { prefix: Nothing, value: toName name }, separator: tokDoubleColon, value }
 
 instance TypeVar (CST.Type e) e where
   typeVar = TypeVar <<< toName
@@ -391,7 +400,7 @@ typeOpName = TypeOpName <<< (coerce :: QualifiedName SymbolName -> _) <<< toQual
 -- |   typeForall [ typeVar "a" ]
 -- |     (typeArrow [ typeVar "a" ] (typeVar "a"))
 -- | ```
-typeForall :: forall e. Array (TypeVarBinding e) -> CST.Type e -> CST.Type e
+typeForall :: forall e. Array (TypeVarBinding (Prefixed (Name Ident)) e) -> CST.Type e -> CST.Type e
 typeForall vars ty =
   vars # NonEmptyArray.fromArray # maybe ty \vars' ->
     TypeForall tokForall vars' tokDot (precType0 ty)
@@ -649,7 +658,34 @@ updateNested a = RecordUpdateBranch (toName a) <<< toDelimitedNonEmpty tokLeftBr
 exprApp :: forall e. Expr e -> Array (Expr e) -> Expr e
 exprApp head =
   maybe head (ExprApp (precExprApp head))
-    <<< precInitLast precExprApp precExprAppLast
+    <<< precInitLast (AppTerm <<< precExprApp) (AppTerm <<< precExprAppLast)
+
+-- | Constructs left-associated applications, with optional type applications.
+-- |
+-- | ```purescript
+-- |   exampleExpr =
+-- |     exprTypeApp (exprIdent "Map.lookup")
+-- |       [ typeCtor "String"
+-- |       , typeApp (typeCtor "Maybe") [ typeCtor "User" ]
+-- |       ]
+-- |       [ exprIdent "userId"
+-- |       , exprIdent "users"
+-- |       ]
+-- | ```
+exprTypeApp :: forall e. Expr e -> Array (CST.Type e) -> Array (Expr e) -> Expr e
+exprTypeApp head tys exprs =
+  maybe head (ExprApp (precExprApp head)) args
+  where
+  args =
+    append <$> mbTys <*> mbExprs
+      <|> mbTys
+      <|> mbExprs
+
+  mbTys =
+    precInitLast (AppType tokAt <<< precType3) (AppType tokAt <<< precType3) tys
+
+  mbExprs =
+    precInitLast (AppTerm <<< precExprApp) (AppTerm <<< precExprAppLast) exprs
 
 -- | Constructs a lambda expression.
 -- |
@@ -981,7 +1017,7 @@ declData
   :: forall e name
    . ToName name Proper
   => name
-  -> Array (TypeVarBinding e)
+  -> Array (TypeVarBinding (Name Ident) e)
   -> Array (DataCtor e)
   -> Declaration e
 declData name vars ctors =
@@ -1009,7 +1045,7 @@ declType
   :: forall e name
    . ToName name Proper
   => name
-  -> Array (TypeVarBinding e)
+  -> Array (TypeVarBinding (Name Ident) e)
   -> CST.Type e
   -> Declaration e
 declType name vars =
@@ -1026,7 +1062,7 @@ declNewtype
    . ToName name Proper
   => ToName ctor Proper
   => name
-  -> Array (TypeVarBinding e)
+  -> Array (TypeVarBinding (Name Ident) e)
   -> ctor
   -> CST.Type e
   -> Declaration e
@@ -1047,7 +1083,7 @@ declClass
    . ToName name Proper
   => Array (CST.Type e)
   -> name
-  -> Array (TypeVarBinding e)
+  -> Array (TypeVarBinding (Name Ident) e)
   -> Array ClassFundep
   -> Array (ClassMember e)
   -> Declaration e
