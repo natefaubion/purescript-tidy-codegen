@@ -1,0 +1,103 @@
+package:
+  name: tidy-codegen
+  dependencies:
+    - arrays
+    - bifunctors
+    - control
+    - dodo-printer
+    - effect
+    - either
+    - enums
+    - foldable-traversable
+    - free
+    - identity
+    - integers
+    - language-cst-parser
+    - lazy
+    - lists
+    - maybe
+    - newtype
+    - ordered-collections
+    - partial
+    - prelude
+    - record
+    - safe-coerce
+    - st
+    - strings
+    - tidy
+    - transformers
+    - tuples
+    - type-equality
+    - unicode
+  test:
+    main: Test.Main
+    dependencies:
+      - aff
+      - ansi
+      - avar
+      - console
+      - exceptions
+      - filterable
+      - node-buffer
+      - node-child-process
+      - node-fs-aff
+      - node-path
+      - node-process
+      - node-streams
+      - parallel
+      - posix-types
+workspace:
+  extra_packages:
+    language-cst-parser:
+      # to update `fd --no-ignore --hidden --type directory language-cst-parser -x rm -rdf`
+      # git: https://github.com/natefaubion/purescript-language-cst-parser.git
+      git: https://github.com/srghma/purescript-language-cst-parser.git
+      ref: main
+      # ref: dbac5f3
+      subdir: lib
+      # ref: v0.13.0
+      # dependencies:
+      #   - arrays
+      #   - const
+      #   - control
+      #   - either
+      #   - foldable-traversable
+      #   - free
+      #   - functions
+      #   - functors
+      #   - identity
+      #   - integers
+      #   - lazy
+      #   - lists
+      #   - maybe
+      #   - newtype
+      #   - numbers
+      #   - ordered-collections
+      #   - partial
+      #   - prelude
+      #   - st
+      #   - strings
+      #   - transformers
+      #   - tuples
+      #   - typelevel-prelude
+      #   - unfoldable
+      #   - unsafe-coerce
+    tidy:
+      # git: https://github.com/natefaubion/purescript-tidy.git
+      git: https://github.com/srghma/purescript-tidy.git
+      ref: main
+      # ref: 83ec210
+      subdir: lib
+      # ref: v0.10.0
+      # dependencies:
+      #   - arrays
+      #   - dodo-printer
+      #   - foldable-traversable
+      #   - language-cst-parser
+      #   - lists
+      #   - maybe
+      #   - ordered-collections
+      #   - partial
+      #   - prelude
+      #   - strings
+      #   - tuples
