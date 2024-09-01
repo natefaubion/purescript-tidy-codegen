@@ -16,7 +16,7 @@ jobs:
         with:
           purescript: "latest"
           psa: "latest"
-          spago: "0.93.28"
+          spago: "unstable"
           purs-tidy: "latest"
       - uses: actions/cache@v2
         # This cache uses the .dhall files to know when it should reinstall
