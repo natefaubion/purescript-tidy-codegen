@@ -5,8 +5,7 @@ module Test.Snapshot
   , execWithStdin
   , isBad
   , snapshotMainOutput
-  )
-  where
+  ) where
 
 import Prelude
 
