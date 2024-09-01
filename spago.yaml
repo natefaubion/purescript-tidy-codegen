@@ -50,39 +50,16 @@ workspace:
     registry: 58.0.0
   extraPackages:
     language-cst-parser:
-      # to update `fd --no-ignore --hidden --type directory language-cst-parser -x rm -rdf`
       # git: https://github.com/natefaubion/purescript-language-cst-parser.git
       git: https://github.com/srghma/purescript-language-cst-parser.git
       ref: main
       # ref: dbac5f3
       subdir: lib
-      # ref: v0.13.0
-      # dependencies:
-      #   - arrays
-      #   - const
-      #   - control
-      #   - either
-      #   - foldable-traversable
-      #   - free
-      #   - functions
-      #   - functors
-      #   - identity
-      #   - integers
-      #   - lazy
-      #   - lists
-      #   - maybe
-      #   - newtype
-      #   - numbers
-      #   - ordered-collections
-      #   - partial
-      #   - prelude
-      #   - st
-      #   - strings
-      #   - transformers
-      #   - tuples
-      #   - typelevel-prelude
-      #   - unfoldable
-      #   - unsafe-coerce
+    dodo-printer:
+      # git: https://github.com/natefaubion/purescript-dodo-printer.git
+      git: https://github.com/srghma/purescript-dodo-printer.git
+      ref: master
+      # ref: 1766a54
     tidy:
       # git: https://github.com/natefaubion/purescript-tidy.git
       git: https://github.com/srghma/purescript-tidy.git

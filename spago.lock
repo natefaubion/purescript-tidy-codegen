@@ -626,64 +626,17 @@ workspace:
       z3: 0.0.2
       zipperarray: 2.0.0
   extra_packages:
-    bolson:
-      path: /home/srghma/projects/purescript-bolson
-    deku-documentation:
-      path: /home/srghma/projects/deku-documentation
-    deku-nextui:
-      path: /home/srghma/projects/purescript-deku-nextui
-    docs:
-      path: /home/srghma/projects/purescript-lumi-components/docs
-    docs-search-client-halogen:
-      path: /home/srghma/projects/spago/docs-search/client-halogen
-    docs-search-common:
-      path: /home/srghma/projects/spago/docs-search/common
-    docs-search-index:
-      path: /home/srghma/projects/spago/docs-search/index
     dodo-printer:
-      path: /home/srghma/projects/purescript-dodo-printer
-    github-actions-toolkit:
-      path: /home/srghma/projects/purescript-github-actions-toolkit
-    html2deku:
-      path: /home/srghma/projects/html2deku
-    hyrule:
-      path: /home/srghma/projects/purescript-hyrule
-    hyrule-demo:
-      path: /home/srghma/projects/purescript-hyrule-demo
-    lumi-components:
-      path: /home/srghma/projects/purescript-lumi-components
-    node-workerbees:
-      path: /home/srghma/projects/purescript-node-workerbees
-    open-drawing:
-      path: /home/srghma/projects/purescript-open-drawing/lib
-    open-drawing-example:
-      path: /home/srghma/projects/purescript-open-drawing/example
-    open-folds:
-      path: /home/srghma/projects/purescript-open-folds
-    open-memoize:
-      path: /home/srghma/projects/purescript-open-memoize
-    open-mkdirp-aff:
-      path: /home/srghma/projects/purescript-open-mkdirp-aff
-    open-pairing:
-      path: /home/srghma/projects/purescript-open-pairing_
-    profunctor:
-      path: /home/srghma/projects/purescript-profunctor
-    spago:
-      path: /home/srghma/projects/spago
-    spago-bin:
-      path: /home/srghma/projects/spago/bin
-    spago-core:
-      path: /home/srghma/projects/spago/core
-    test:
-      path: /home/srghma/projects/purescript-test
+      git: https://github.com/srghma/purescript-dodo-printer.git
+      ref: master
+    language-cst-parser:
+      git: https://github.com/srghma/purescript-language-cst-parser.git
+      ref: main
+      subdir: lib
     tidy:
-      path: /home/srghma/projects/purescript-tidy/lib
-    tidy-cli:
-      path: /home/srghma/projects/purescript-tidy/bin
-    tidy-script:
-      path: /home/srghma/projects/purescript-tidy/script
-    tldr:
-      path: /home/srghma/projects/purescript-tldr
+      git: https://github.com/srghma/purescript-tidy.git
+      ref: main
+      subdir: lib
 packages:
   aff:
     type: registry
@@ -888,8 +841,9 @@ packages:
       - tuples
       - type-equality
   dodo-printer:
-    type: local
-    path: /home/srghma/projects/purescript-dodo-printer
+    type: git
+    url: https://github.com/srghma/purescript-dodo-printer.git
+    rev: 1766a5410bb3db8b1b652c17187dad2262ba976f
     dependencies:
       - ansi
       - either
@@ -1100,14 +1054,14 @@ packages:
       - integers
       - now
   language-cst-parser:
-    type: registry
-    version: 0.14.0
-    integrity: sha256-GB5HkoWkgsb1xtdchaq7+CerQTVyene5+aR6RsEZv2w=
+    type: git
+    url: https://github.com/srghma/purescript-language-cst-parser.git
+    rev: dbac5f38188ebaf112dc26e02ea162c0b31e0597
+    subdir: lib
     dependencies:
       - arrays
       - const
       - control
-      - effect
       - either
       - enums
       - foldable-traversable
@@ -1381,8 +1335,9 @@ packages:
     integrity: sha256-o8p6SLYmVPqzXZhQFd2hGAWEwBoXl1swxLG/scpJ0V0=
     dependencies: []
   profunctor:
-    type: local
-    path: /home/srghma/projects/purescript-profunctor
+    type: registry
+    version: 6.0.1
+    integrity: sha256-E58hSYdJvF2Qjf9dnWLPlJKh2Z2fLfFLkQoYi16vsFk=
     dependencies:
       - control
       - distributive
@@ -1457,8 +1412,10 @@ packages:
       - prelude
       - refs
   tidy:
-    type: local
-    path: /home/srghma/projects/purescript-tidy/lib
+    type: git
+    url: https://github.com/srghma/purescript-tidy.git
+    rev: 83ec21015fe43f999882f547156e29dfcb0fd7d2
+    subdir: lib
     dependencies:
       - argonaut-codecs
       - argonaut-core
