@@ -40,6 +40,8 @@ workspace:
         - filterable
         - node-buffer
         - node-child-process
+        - node-fs
+        - node-os
         - node-path
         - node-process
         - node-streams
