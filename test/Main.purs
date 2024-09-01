@@ -43,10 +43,10 @@ main = do
             Left errs -> do
               for_ errs \(ExampleParseError field err) ->
                 Console.error $ field <> ":" <> printParseError err.error
-              liftEffect $ Process.exit 1
+              liftEffect $ Process.exit' 1
         _ -> do
           Console.error $ "Invalid generate argument: " <> arg
-          liftEffect $ Process.exit 1
+          liftEffect $ Process.exit' 1
     Nothing -> do
       results <- snapshotMainOutput "./test/snapshots" accept filter
       for_ results \{ name, output, result } -> case result of
@@ -67,4 +67,4 @@ main = do
           Console.log $ withGraphics (foreground Red) "✗" <> " " <> name <> " failed due to an error."
           Console.log $ Error.message err
       when (any (isBad <<< _.result) results) do
-        liftEffect $ Process.exit 1
+        liftEffect $ Process.exit' 1

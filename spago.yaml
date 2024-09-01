@@ -1,0 +1,70 @@
+package:
+  name: tidy-codegen
+  dependencies:
+    - arrays
+    - bifunctors
+    - control
+    - dodo-printer
+    - effect
+    - either
+    - enums
+    - foldable-traversable
+    - free
+    - identity
+    - integers
+    - language-cst-parser
+    - lazy
+    - lists
+    - maybe
+    - newtype
+    - ordered-collections
+    - partial
+    - prelude
+    - record
+    - safe-coerce
+    - st
+    - strings
+    - tidy
+    - transformers
+    - tuples
+    - type-equality
+    - unicode
+  test:
+    main: Test.Main
+    dependencies:
+      - aff
+      - ansi
+      - avar
+      - console
+      - exceptions
+      - filterable
+      - node-buffer
+      - node-child-process
+      - node-fs
+      - node-os
+      - node-path
+      - node-process
+      - node-streams
+      - parallel
+      - posix-types
+workspace:
+  packageSet:
+    registry: 58.0.0
+  extraPackages:
+    language-cst-parser:
+      # git: https://github.com/natefaubion/purescript-language-cst-parser.git
+      git: https://github.com/srghma/purescript-language-cst-parser.git
+      ref: main
+      # ref: dbac5f3
+      subdir: lib
+    dodo-printer:
+      # git: https://github.com/natefaubion/purescript-dodo-printer.git
+      git: https://github.com/srghma/purescript-dodo-printer.git
+      ref: master
+      # ref: 1766a54
+    tidy:
+      # git: https://github.com/natefaubion/purescript-tidy.git
+      git: https://github.com/srghma/purescript-tidy.git
+      ref: main
+      # ref: 83ec210
+      subdir: lib
