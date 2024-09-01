@@ -40,14 +40,15 @@ package:
       - filterable
       - node-buffer
       - node-child-process
-      - node-fs-aff
       - node-path
       - node-process
       - node-streams
       - parallel
       - posix-types
 workspace:
-  extra_packages:
+  packageSet:
+    registry: 58.0.0
+  extraPackages:
     language-cst-parser:
       # to update `fd --no-ignore --hidden --type directory language-cst-parser -x rm -rdf`
       # git: https://github.com/natefaubion/purescript-language-cst-parser.git
@@ -88,16 +89,3 @@ workspace:
       ref: main
       # ref: 83ec210
       subdir: lib
-      # ref: v0.10.0
-      # dependencies:
-      #   - arrays
-      #   - dodo-printer
-      #   - foldable-traversable
-      #   - language-cst-parser
-      #   - lists
-      #   - maybe
-      #   - ordered-collections
-      #   - partial
-      #   - prelude
-      #   - strings
-      #   - tuples
