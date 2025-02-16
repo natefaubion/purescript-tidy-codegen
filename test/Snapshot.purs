@@ -21,9 +21,10 @@ import Effect.Class (liftEffect)
 import Node.Buffer (Buffer, freeze)
 import Node.Buffer as Buffer
 import Node.Buffer.Immutable as ImmutableBuffer
-import Node.ChildProcess (ExecResult, defaultExecOptions)
+import Node.ChildProcess (ExecResult)
 import Node.ChildProcess as ChildProcess
 import Node.Encoding (Encoding(..))
+import Node.Errors.SystemError as SystemError
 import Node.FS.Aff (readFile, readdir, writeFile)
 import Node.Path (basename)
 import Node.Path as Path
@@ -75,7 +76,7 @@ snapshotMainOutput directory accept mbPattern = do
     result <- exec $ "node --input-type=module -e 'import { main } from \"./output/" <> name <> "/index.js\";main()'"
     case result of
       { error: Just err } ->
-        throwError err
+        throwError (SystemError.toError err)
       { stdout } -> do
         output <- liftEffect $ bufferToUTF8 stdout
         let
@@ -101,15 +102,15 @@ snapshotMainOutput directory accept mbPattern = do
 
 exec :: String -> Aff ExecResult
 exec command = makeAff \k -> do
-  childProc <- ChildProcess.exec command defaultExecOptions (k <<< pure)
-  pure $ effectCanceler $ ChildProcess.kill SIGABRT childProc
+  childProc <- ChildProcess.exec' command identity (k <<< pure)
+  pure $ effectCanceler $ void $ ChildProcess.killSignal SIGABRT childProc
 
 execWithStdin :: String -> String -> Aff ExecResult
 execWithStdin command input = makeAff \k -> do
-  childProc <- ChildProcess.exec command defaultExecOptions (k <<< pure)
-  _ <- Stream.writeString (ChildProcess.stdin childProc) UTF8 input mempty
-  Stream.end (ChildProcess.stdin childProc) mempty
-  pure $ effectCanceler $ ChildProcess.kill SIGABRT childProc
+  childProc <- ChildProcess.exec' command identity (k <<< pure)
+  _ <- Stream.writeString (ChildProcess.stdin childProc) UTF8 input
+  Stream.end (ChildProcess.stdin childProc)
+  pure $ effectCanceler $ void $ ChildProcess.killSignal SIGABRT childProc
 
 bufferToUTF8 :: Buffer -> Effect String
 bufferToUTF8 = map (ImmutableBuffer.toString UTF8) <<< freeze
