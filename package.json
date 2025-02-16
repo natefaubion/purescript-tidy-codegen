@@ -1,9 +1,16 @@
 {
   "name": "purescript-tidy-codegen",
   "scripts": {
-    "clean-examples": "rm test/snapshots/*Examples.purs || true",
-    "generate-examples": "spago test -a '--generate=./src/Tidy/Codegen.purs:CodegenExamples'",
-    "pretest": "npm run clean-examples && npm run generate-examples",
-    "test": "spago test"
+    "examples:clean": "rm test/snapshots/*Examples.purs || true",
+    "examples": "spago test -- '--generate=./src/Tidy/Codegen.purs:CodegenExamples'",
+    "format": "purs-tidy format-in-place src test",
+    "format:check": "purs-tidy check src test",
+    "pretest": "npm run examples:clean && npm run examples",
+    "test": "spago test --pure --offline"
+  },
+  "devDependencies": {
+    "purescript": "^0.15.15",
+    "purs-tidy": "^0.11.0",
+    "spago": "^0.93.43"
   }
 }
