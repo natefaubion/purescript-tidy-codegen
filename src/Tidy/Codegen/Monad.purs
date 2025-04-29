@@ -221,7 +221,7 @@ data ImportName name = ImportName CodegenImport (QualifiedName name)
 -- |   -- Generates a `import Data.Map (Map)` import
 -- |   mapType <- importFrom "Data.Map" (importType "Map")
 -- |   -- Group multiple imports with a record
--- |   dataMap <- import From "Data.Map"
+-- |   dataMap <- importFrom "Data.Map"
 -- |     { type: importType "Map"
 -- |     , lookup: importValue "Map.lookup"
 -- |     }
